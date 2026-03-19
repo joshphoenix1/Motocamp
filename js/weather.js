@@ -181,7 +181,9 @@ const Weather = {
   },
 
   render() {
-    // OWM tiles render themselves — nothing to do
+    // OWM tiles show current conditions only
+    // Wind particles update automatically via currentHourOffset
+    this.updateTimeLabel(this.currentHourOffset);
   },
 
   // Wind particle animation (Ventusky-style flowing lines)
@@ -282,12 +284,12 @@ const Weather = {
     }
   },
 
-  // Timeline playback (cycles wind particles through forecast hours)
+  // Timeline playback (cycles through forecast hours)
   startAnimation(type) {
     this.stopAnimation();
     let hour = this.currentHourOffset;
     this.animationTimer = setInterval(() => {
-      hour = (hour + 3) % 168;
+      hour = (hour + 1) % 168;
       this.currentHourOffset = hour;
 
       const slider = document.getElementById('weather-timeline-slider');
@@ -296,7 +298,7 @@ const Weather = {
       if (sideSlider) sideSlider.value = hour;
 
       this.updateTimeLabel(hour);
-    }, 600);
+    }, 150);
   },
 
   stopAnimation() {
