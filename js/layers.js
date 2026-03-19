@@ -190,11 +190,11 @@ const Layers = {
       }
     }
 
-    // Carrier-specific color gradients
+    // Soft, modern gradients — transparent edges fading to gentle cores
     const gradients = {
-      'cell-spark': { 0.2: '#fff7cc', 0.4: '#ffee66', 0.6: '#ffe600', 0.8: '#ccb800', 1.0: '#998a00' },
-      'cell-vodafone': { 0.2: '#ffcccc', 0.4: '#ff6666', 0.6: '#e60000', 0.8: '#b30000', 1.0: '#800000' },
-      'cell-2degrees': { 0.2: '#ccedff', 0.4: '#66ccff', 0.6: '#00aaff', 0.8: '#0088cc', 1.0: '#006699' },
+      'cell-spark': { 0.1: 'rgba(255,220,100,0)', 0.3: 'rgba(255,200,60,0.15)', 0.5: 'rgba(245,180,40,0.3)', 0.7: 'rgba(230,160,30,0.45)', 1.0: 'rgba(210,145,20,0.6)' },
+      'cell-vodafone': { 0.1: 'rgba(255,120,140,0)', 0.3: 'rgba(240,90,110,0.15)', 0.5: 'rgba(220,70,90,0.3)', 0.7: 'rgba(200,55,75,0.45)', 1.0: 'rgba(180,40,60,0.6)' },
+      'cell-2degrees': { 0.1: 'rgba(100,200,255,0)', 0.3: 'rgba(70,175,235,0.15)', 0.5: 'rgba(50,150,210,0.3)', 0.7: 'rgba(35,125,190,0.45)', 1.0: 'rgba(25,100,170,0.6)' },
     };
 
     for (const [key, points] of Object.entries(heatData)) {
@@ -203,13 +203,12 @@ const Layers = {
         blur: 30,
         maxZoom: 11,
         max: 1.0,
-        minOpacity: 0.03,
+        minOpacity: 0.02,
         gradient: gradients[key]
       });
-      // Keep heatmap subtle so it doesn't overwhelm the map
       heat.on('add', function() {
         const el = this._canvas || this._container;
-        if (el) el.style.opacity = '0.4';
+        if (el) el.style.opacity = '0.55';
       });
       this.groups[key] = heat;
     }
