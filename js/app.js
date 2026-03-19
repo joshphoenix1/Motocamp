@@ -178,6 +178,17 @@
     }
   });
 
+  // Cell coverage map button
+  const cellBtn = document.getElementById('btn-cell-toggle');
+  cellBtn.addEventListener('click', () => {
+    const sidebarToggle = document.getElementById('cell-all-toggle');
+    if (sidebarToggle) {
+      sidebarToggle.checked = !sidebarToggle.checked;
+      sidebarToggle.dispatchEvent(new Event('change'));
+    }
+    cellBtn.classList.toggle('active', sidebarToggle?.checked);
+  });
+
   // ===== Right-Click Context Menu =====
   const ctxMenu = document.createElement('div');
   ctxMenu.id = 'context-menu';

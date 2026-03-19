@@ -601,13 +601,15 @@ const Layers = {
 
       if (dist < result[key].dist) {
         result[key].dist = dist;
-        result[key].tech = f.properties.technology;
+        // NZ only has 4G/5G networks now — legacy 2G/3G bands refarmed to 4G
+        const rawTech = f.properties.technology;
+        result[key].tech = (rawTech === '5G') ? '5G' : '4G';
       }
     }
 
     // Convert distance to signal strength (0-100)
     const distToSignal = (dist, tech) => {
-      const maxRange = tech === '5G' ? 2 : tech === '4G' ? 10 : 20;
+      const maxRange = tech === '5G' ? 3 : 15;
       if (dist > maxRange * 2) return 0;
       return Math.max(0, Math.round(100 * (1 - dist / (maxRange * 2))));
     };

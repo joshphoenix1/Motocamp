@@ -373,6 +373,7 @@ body {
   box-shadow: var(--shadow);
 }
 .map-btn:hover { background: var(--bg-tertiary); color: var(--accent); }
+.map-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ===== Weather Timeline ===== */
 #weather-timeline {
