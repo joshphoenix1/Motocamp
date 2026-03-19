@@ -222,6 +222,27 @@ const Layers = {
         }
       });
     });
+
+    // Global cell coverage toggle
+    const cellAllToggle = document.getElementById('cell-all-toggle');
+    if (cellAllToggle) {
+      cellAllToggle.addEventListener('change', (e) => {
+        const cellKeys = ['cell-spark', 'cell-vodafone', 'cell-2degrees'];
+        const checked = e.target.checked;
+
+        cellKeys.forEach(key => {
+          const cb = document.querySelector(`[data-layer="${key}"]`);
+          if (cb) cb.checked = checked;
+          const group = this.groups[key];
+          if (!group) return;
+          if (checked) {
+            this.map.addLayer(group);
+          } else {
+            this.map.removeLayer(group);
+          }
+        });
+      });
+    }
   },
 
   setupFilters() {
