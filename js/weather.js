@@ -192,8 +192,8 @@ const Weather = {
     if (!this.windCanvas || !this.windGrid) return;
 
     const PARTICLE_COUNT = 5000;
-    const MAX_AGE = 90;
-    const FADE = 0.97;
+    const MAX_AGE = 150;
+    const FADE = 0.985;
 
     const canvas = this.windCanvas;
 
@@ -221,7 +221,7 @@ const Weather = {
       const map = this.map;
       const hourIdx = Math.min(this.currentHourOffset, 167);
       const zoom = map.getZoom();
-      const speedFactor = Math.max(0.3, 1.5 - zoom * 0.1);
+      const speedFactor = Math.max(0.12, 0.6 - zoom * 0.04);
 
       ctx.beginPath();
       ctx.strokeStyle = 'rgba(255,255,255,0.6)';
