@@ -15,6 +15,18 @@ const RoutePlanner = {
     document.getElementById('clear-route').addEventListener('click', () => this.clearRoute());
     document.getElementById('plan-route').addEventListener('click', () => this.planRoute());
 
+    // Re-route when gravel toggle changes (if route exists)
+    const gravelToggle = document.getElementById('gravel-bias');
+    if (gravelToggle) {
+      gravelToggle.addEventListener('change', () => {
+        const startInput = document.getElementById('route-start');
+        const endInput = document.getElementById('route-end');
+        if (startInput.dataset.lat && endInput.dataset.lat) {
+          this.planRoute();
+        }
+      });
+    }
+
     // Route input geocoding
     this.setupInputGeocoding('route-start');
     this.setupInputGeocoding('route-end');
