@@ -212,7 +212,6 @@ const Layers = {
         if (el) el.style.opacity = '0.4';
       });
       this.groups[key] = heat;
-      this.map.addLayer(heat);
     }
   },
 
