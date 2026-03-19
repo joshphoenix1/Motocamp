@@ -8,6 +8,7 @@ const RoutePlanner = {
   init(map) {
     this.map = map;
     this.setupEventListeners();
+    this.loadSavedRoutes();
   },
 
   setupEventListeners() {
@@ -26,6 +27,9 @@ const RoutePlanner = {
         }
       });
     }
+
+    // Save route button
+    document.getElementById('save-route').addEventListener('click', () => this.saveRoute());
 
     // Route input geocoding
     this.setupInputGeocoding('route-start');
@@ -203,7 +207,7 @@ const RoutePlanner = {
           profile: 'car',
           useHints: false
         }),
-        routeWhileDragging: false,
+        routeWhileDragging: true,
         alternatives: true,
         lineOptions: {
           styles: [
@@ -218,7 +222,7 @@ const RoutePlanner = {
           }
         },
         show: false,
-        addWaypoints: false,
+        addWaypoints: true,
         fitSelectedRoutes: true,
         createMarker: (i, wp) => {
           const isStart = i === 0;
@@ -429,5 +433,119 @@ const RoutePlanner = {
     document.getElementById('route-end').dataset.lon = '';
     document.getElementById('route-waypoints-container').innerHTML = '';
     document.getElementById('route-summary').classList.add('hidden');
+  },
+
+  saveRoute() {
+    const startInput = document.getElementById('route-start');
+    const endInput = document.getElementById('route-end');
+
+    if (!startInput.dataset.lat || !endInput.dataset.lat) {
+      alert('Plan a route first before saving.');
+      return;
+    }
+
+    const name = prompt('Enter a name for this route:');
+    if (!name) return;
+
+    // Collect waypoint data
+    const waypointInputs = document.querySelectorAll('.route-waypoint-input');
+    const waypoints = [];
+    waypointInputs.forEach(inp => {
+      if (inp.dataset.lat) {
+        waypoints.push({
+          name: inp.value,
+          lat: inp.dataset.lat,
+          lon: inp.dataset.lon
+        });
+      }
+    });
+
+    const route = {
+      name,
+      start: { name: startInput.value, lat: startInput.dataset.lat, lon: startInput.dataset.lon },
+      end: { name: endInput.value, lat: endInput.dataset.lat, lon: endInput.dataset.lon },
+      waypoints,
+      gravelBias: document.getElementById('gravel-bias')?.checked || false,
+      timestamp: Date.now()
+    };
+
+    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    saved.push(route);
+    localStorage.setItem('motocamp-routes', JSON.stringify(saved));
+    this.loadSavedRoutes();
+  },
+
+  loadSavedRoutes() {
+    const list = document.getElementById('saved-routes-list');
+    if (!list) return;
+
+    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+
+    if (saved.length === 0) {
+      list.innerHTML = '<p style="font-size:0.78rem;color:var(--text-muted)">No saved routes yet.</p>';
+      return;
+    }
+
+    list.innerHTML = saved.map((route, i) => {
+      const date = new Date(route.timestamp).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+      const startShort = route.start.name.split(',')[0];
+      const endShort = route.end.name.split(',')[0];
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${route.name}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${startShort} → ${endShort}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">${date}</div>
+        </div>
+        <button class="btn btn-sm" onclick="RoutePlanner.loadRoute(${i})" style="flex-shrink:0"><i class="fas fa-upload"></i> Load</button>
+        <button onclick="RoutePlanner.deleteRoute(${i})" style="flex-shrink:0;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.85rem;padding:4px" title="Delete"><i class="fas fa-times"></i></button>
+      </div>`;
+    }).join('');
+  },
+
+  loadRoute(index) {
+    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    const route = saved[index];
+    if (!route) return;
+
+    // Set start
+    const startInput = document.getElementById('route-start');
+    startInput.value = route.start.name;
+    startInput.dataset.lat = route.start.lat;
+    startInput.dataset.lon = route.start.lon;
+
+    // Set end
+    const endInput = document.getElementById('route-end');
+    endInput.value = route.end.name;
+    endInput.dataset.lat = route.end.lat;
+    endInput.dataset.lon = route.end.lon;
+
+    // Clear and re-add waypoints
+    const container = document.getElementById('route-waypoints-container');
+    container.innerHTML = '';
+    if (route.waypoints && route.waypoints.length > 0) {
+      route.waypoints.forEach(wp => {
+        this.addWaypointInput();
+        const inputs = container.querySelectorAll('.route-waypoint-input');
+        const lastInput = inputs[inputs.length - 1];
+        lastInput.value = wp.name;
+        lastInput.dataset.lat = wp.lat;
+        lastInput.dataset.lon = wp.lon;
+      });
+    }
+
+    // Set gravel toggle
+    const gravelToggle = document.getElementById('gravel-bias');
+    if (gravelToggle) {
+      gravelToggle.checked = route.gravelBias || false;
+    }
+
+    this.planRoute();
+  },
+
+  deleteRoute(index) {
+    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    saved.splice(index, 1);
+    localStorage.setItem('motocamp-routes', JSON.stringify(saved));
+    this.loadSavedRoutes();
   }
 };
