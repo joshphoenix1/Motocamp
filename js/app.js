@@ -322,8 +322,13 @@
     document.getElementById('info-panel').classList.add('hidden');
   });
 
-  // ===== Map Click for Weather =====
+  // ===== Map Click: close info panel + weather =====
   map.on('click', async (e) => {
+    // Close info panel on any map click
+    if (!Layers.activeWeatherType) {
+      document.getElementById('info-panel').classList.add('hidden');
+    }
+
     // If weather overlay is active, show point weather
     if (Layers.activeWeatherType) {
       const weatherInfo = document.getElementById('weather-point-info');
