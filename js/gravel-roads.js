@@ -65,70 +65,74 @@ const GravelRoads = {
       points: [[-44.60, 169.60], [-44.55, 169.55]] },
   ],
 
-  // Find gravel roads near a route corridor
-  findNearbyGravelRoads(startLat, startLon, endLat, endLon, maxDistKm) {
-    maxDistKm = maxDistKm || 60;
+  // Find gravel roads within a tight corridor along the route
+  findNearbyGravelRoads(startLat, startLon, endLat, endLon) {
     const results = [];
-
-    // Route corridor: midpoint and bearing
-    const midLat = (startLat + endLat) / 2;
-    const midLon = (startLon + endLon) / 2;
     const routeLen = this._dist(startLat, startLon, endLat, endLon);
 
+    // Scale max detour to route length — short trips get tight corridors
+    // Max 20% of route length as detour, capped at 30km
+    const maxDetourKm = Math.min(routeLen * 0.20, 30);
+
     for (const road of this.roads) {
-      // Check if any point on this road is near the route corridor
-      let minDist = Infinity;
+      let minDetour = Infinity;
       let bestPoint = null;
 
       for (const [lat, lon] of road.points) {
-        // Distance from this gravel point to the route line
         const distToStart = this._dist(lat, lon, startLat, startLon);
         const distToEnd = this._dist(lat, lon, endLat, endLon);
-        const distToMid = this._dist(lat, lon, midLat, midLon);
 
-        // Must be roughly between start and end (not way off to the side)
-        if (distToStart + distToEnd < routeLen * 2.5) {
-          const corridorDist = Math.min(distToStart, distToEnd, distToMid);
-          if (corridorDist < minDist) {
-            minDist = corridorDist;
+        // The gravel point must be genuinely between start and end:
+        // distToStart + distToEnd should be close to routeLen (not much longer)
+        const totalVia = distToStart + distToEnd;
+        const detour = totalVia - routeLen;
+
+        // Detour must be small — road is roughly on the way
+        if (detour < maxDetourKm && detour < minDetour) {
+          // Also reject if it's too close to start/end (< 10% of route)
+          // to avoid pointless tiny detours at the edges
+          const minEdgeDist = routeLen * 0.10;
+          if (distToStart > minEdgeDist && distToEnd > minEdgeDist) {
+            minDetour = detour;
             bestPoint = [lat, lon];
           }
         }
       }
 
-      if (minDist < maxDistKm && bestPoint) {
+      if (bestPoint && minDetour < maxDetourKm) {
         results.push({
           name: road.name,
           points: road.points,
-          distance: minDist,
+          detour: minDetour,
           bestPoint
         });
       }
     }
 
-    // Sort by distance to corridor
-    results.sort((a, b) => a.distance - b.distance);
+    // Sort by smallest detour first
+    results.sort((a, b) => a.detour - b.detour);
     return results;
   },
 
   // Get waypoints to inject for gravel routing
   getGravelWaypoints(startLat, startLon, endLat, endLon) {
-    const nearby = this.findNearbyGravelRoads(startLat, startLon, endLat, endLon, 80);
+    const nearby = this.findNearbyGravelRoads(startLat, startLon, endLat, endLon);
     if (nearby.length === 0) return [];
 
-    // Pick up to 3 gravel roads, inject their midpoints as waypoints
-    const waypoints = [];
-    const used = Math.min(nearby.length, 3);
+    const routeLen = this._dist(startLat, startLon, endLat, endLon);
 
-    for (let i = 0; i < used; i++) {
+    // Pick only 1 gravel road for short trips (<100km), up to 2 for longer
+    const maxRoads = routeLen < 100 ? 1 : 2;
+    const waypoints = [];
+
+    for (let i = 0; i < Math.min(nearby.length, maxRoads); i++) {
       const road = nearby[i];
       const pts = road.points;
-      // Use the middle point of the gravel road
       const mid = pts[Math.floor(pts.length / 2)];
       waypoints.push({ lat: mid[0], lon: mid[1], name: road.name });
     }
 
-    // Sort waypoints by distance from start (so route flows correctly)
+    // Sort waypoints by distance from start
     waypoints.sort((a, b) => {
       const da = this._dist(a.lat, a.lon, startLat, startLon);
       const db = this._dist(b.lat, b.lon, startLat, startLon);
