@@ -632,5 +632,29 @@ body {
   .weather-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* ===== Context Menu ===== */
+#context-menu {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 2000;
+  min-width: 200px;
+  padding: 4px 0;
+  overflow: hidden;
+}
+.ctx-item {
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: background 0.15s;
+  color: var(--text-primary);
+}
+.ctx-item:hover { background: rgba(255,255,255,0.06); }
+.ctx-item i { color: var(--accent); width: 16px; text-align: center; font-size: 0.85rem; }
+.ctx-divider { height: 1px; background: var(--bg-tertiary); margin: 4px 0; }
+
 /* ===== Hidden utility ===== */
 .hidden { display: none !important; }

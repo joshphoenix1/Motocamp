@@ -178,6 +178,134 @@
     }
   });
 
+  // ===== Right-Click Context Menu =====
+  const ctxMenu = document.createElement('div');
+  ctxMenu.id = 'context-menu';
+  ctxMenu.className = 'hidden';
+  ctxMenu.innerHTML = `
+    <div class="ctx-item" data-action="directions-from"><i class="fas fa-play"></i> Directions from here</div>
+    <div class="ctx-item" data-action="directions-to"><i class="fas fa-flag-checkered"></i> Directions to here</div>
+    <div class="ctx-item" data-action="add-waypoint"><i class="fas fa-map-pin"></i> Add as waypoint</div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item" data-action="whats-here"><i class="fas fa-info-circle"></i> What's here?</div>
+    <div class="ctx-item" data-action="nearby"><i class="fas fa-search-location"></i> Nearby services</div>
+  `;
+  document.body.appendChild(ctxMenu);
+
+  let ctxLatLng = null;
+
+  map.on('contextmenu', (e) => {
+    e.originalEvent.preventDefault();
+    ctxLatLng = e.latlng;
+    ctxMenu.style.left = e.originalEvent.pageX + 'px';
+    ctxMenu.style.top = e.originalEvent.pageY + 'px';
+    ctxMenu.classList.remove('hidden');
+  });
+
+  document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
+  document.addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('#map')) ctxMenu.classList.add('hidden');
+  });
+
+  ctxMenu.addEventListener('click', async (e) => {
+    const item = e.target.closest('.ctx-item');
+    if (!item || !ctxLatLng) return;
+    const action = item.dataset.action;
+    ctxMenu.classList.add('hidden');
+
+    // Switch to route tab for direction actions
+    const switchToRoute = () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector('[data-tab="route"]').classList.add('active');
+      document.getElementById('tab-route').classList.add('active');
+      if (window.innerWidth <= 768) sidebar.classList.add('open');
+    };
+
+    // Reverse geocode the location
+    const reverseGeocode = async (lat, lon) => {
+      try {
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
+        const data = await resp.json();
+        return data.display_name ? data.display_name.split(',').slice(0, 2).join(',').trim() : `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      } catch { return `${lat.toFixed(4)}, ${lon.toFixed(4)}`; }
+    };
+
+    if (action === 'directions-from') {
+      switchToRoute();
+      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
+      const input = document.getElementById('route-start');
+      input.value = name;
+      input.dataset.lat = ctxLatLng.lat;
+      input.dataset.lon = ctxLatLng.lng;
+      // Auto-plan if both start and end are set
+      const endInput = document.getElementById('route-end');
+      if (endInput.dataset.lat) document.getElementById('plan-route').click();
+    }
+
+    else if (action === 'directions-to') {
+      switchToRoute();
+      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
+      const input = document.getElementById('route-end');
+      input.value = name;
+      input.dataset.lat = ctxLatLng.lat;
+      input.dataset.lon = ctxLatLng.lng;
+      // Auto-plan if both start and end are set
+      const startInput = document.getElementById('route-start');
+      if (startInput.dataset.lat) document.getElementById('plan-route').click();
+    }
+
+    else if (action === 'add-waypoint') {
+      switchToRoute();
+      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
+      RoutePlanner.addAsWaypoint(ctxLatLng.lat, ctxLatLng.lng, name);
+    }
+
+    else if (action === 'whats-here') {
+      const wxData = await Weather.fetchPointWeather(ctxLatLng.lat, ctxLatLng.lng);
+      const cellInfo = Layers.findCellCoverage(ctxLatLng.lat, ctxLatLng.lng);
+      const nearbyStats = Layers.getNearbyStats(ctxLatLng.lat, ctxLatLng.lng);
+      const wxHTML = Weather.buildWeatherHTML(wxData);
+      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
+
+      const panel = document.getElementById('info-panel');
+      document.getElementById('info-content').innerHTML = `
+        <div class="info-header"><h2>${name}</h2><span class="info-type">Location Info</span></div>
+        <div class="info-details">
+          <div class="info-detail"><div class="info-detail-label">Coordinates</div><div class="info-detail-value">${ctxLatLng.lat.toFixed(4)}, ${ctxLatLng.lng.toFixed(4)}</div></div>
+        </div>
+        <div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;margin-bottom:16px">
+          <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-map-signs" style="color:var(--accent)"></i> Nearby (20km)</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <span class="facility-badge ${nearbyStats.campsites > 0 ? 'available' : ''}"><i class="fas fa-campground"></i> ${nearbyStats.campsites} Campsites</span>
+            <span class="facility-badge ${nearbyStats.fuel > 0 ? 'available' : ''}"><i class="fas fa-gas-pump"></i> ${nearbyStats.fuel} Fuel</span>
+            <span class="facility-badge ${nearbyStats.shops > 0 ? 'available' : ''}"><i class="fas fa-store"></i> ${nearbyStats.shops} Shops</span>
+            <span class="facility-badge ${nearbyStats.water > 0 ? 'available' : ''}"><i class="fas fa-droplet"></i> ${nearbyStats.water} Water</span>
+            <span class="facility-badge ${nearbyStats.toilets > 0 ? 'available' : ''}"><i class="fas fa-toilet"></i> ${nearbyStats.toilets} Toilets</span>
+          </div>
+        </div>
+        <div class="info-cell-coverage">
+          <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-signal" style="color:var(--accent)"></i> Cell Coverage</h4>
+          ${Layers.buildCellCoverageHTML(cellInfo)}
+        </div>
+        <div class="info-weather"><h4><i class="fas fa-cloud-sun"></i> 7-Day Forecast</h4>${wxHTML}</div>
+        <div class="info-actions">
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${ctxLatLng.lat},${ctxLatLng.lng}" target="_blank" class="btn btn-sm"><i class="fas fa-directions"></i> Navigate</a>
+        </div>
+      `;
+      panel.classList.remove('hidden');
+    }
+
+    else if (action === 'nearby') {
+      // Zoom in and enable all service layers
+      map.flyTo(ctxLatLng, 13, { duration: 1 });
+      ['toilets', 'water', 'shelters', 'fuel', 'shops'].forEach(layer => {
+        const cb = document.querySelector(`[data-layer="${layer}"]`);
+        if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+      });
+    }
+  });
+
   // ===== Info Panel Close =====
   document.getElementById('info-close').addEventListener('click', () => {
     document.getElementById('info-panel').classList.add('hidden');
