@@ -5,6 +5,7 @@ const RoutePlanner = {
   routeMarkers: [],
   routeLine: null,
   gravelOverlays: [],
+  elevationMarker: null,
 
   init(map) {
     this.map = map;
@@ -252,7 +253,7 @@ const RoutePlanner = {
           this.highlightGravelSegments(route.coordinates);
         }
 
-        await this.generateRouteSummary(route, allPoints, altRoutes);
+        await this.generateRouteSummary(route, allPoints, altRoutes, route.coordinates);
       });
 
     } catch (e) {
@@ -265,7 +266,7 @@ const RoutePlanner = {
     }
   },
 
-  async generateRouteSummary(route, points, altRoutes) {
+  async generateRouteSummary(route, points, altRoutes, routeCoords) {
     const summary = document.getElementById('route-summary');
     const content = document.getElementById('route-summary-content');
 
@@ -384,6 +385,19 @@ const RoutePlanner = {
 
     content.innerHTML = html;
     summary.classList.remove('hidden');
+
+    // Fetch and render elevation profile
+    if (routeCoords && routeCoords.length > 1) {
+      const elData = await this.fetchElevationData(routeCoords);
+      if (elData) {
+        // Insert elevation profile after route overview
+        const overviewEl = content.querySelector('.route-overview');
+        const insertTarget = overviewEl ? overviewEl.nextSibling : content.firstChild;
+        const elContainer = document.createElement('div');
+        content.insertBefore(elContainer, insertTarget);
+        this.renderElevationProfile(elData, elContainer);
+      }
+    }
   },
 
   buildGoogleMapsURL(points) {
@@ -428,6 +442,233 @@ const RoutePlanner = {
     return result;
   },
 
+  // Fetch elevation data for route coordinates using Open-Meteo
+  async fetchElevationData(routeCoords) {
+    // Sample coordinates - Open-Meteo accepts up to 100 per request
+    const MAX_POINTS = 150;
+    const step = Math.max(1, Math.floor(routeCoords.length / MAX_POINTS));
+    const sampled = [];
+    for (let i = 0; i < routeCoords.length; i += step) {
+      sampled.push(routeCoords[i]);
+    }
+    // Always include last point
+    if (sampled[sampled.length - 1] !== routeCoords[routeCoords.length - 1]) {
+      sampled.push(routeCoords[routeCoords.length - 1]);
+    }
+
+    // Calculate cumulative distances for each sampled point
+    const distances = [0];
+    for (let i = 1; i < sampled.length; i++) {
+      const d = Utils.distance(sampled[i - 1].lat, sampled[i - 1].lng, sampled[i].lat, sampled[i].lng);
+      distances.push(distances[i - 1] + d);
+    }
+
+    // Batch requests (Open-Meteo allows ~100 coords per request)
+    const BATCH = 100;
+    const elevations = [];
+    for (let i = 0; i < sampled.length; i += BATCH) {
+      const batch = sampled.slice(i, i + BATCH);
+      const lats = batch.map(c => c.lat.toFixed(4)).join(',');
+      const lons = batch.map(c => c.lng.toFixed(4)).join(',');
+      try {
+        const resp = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+        const data = await resp.json();
+        if (data.elevation) {
+          elevations.push(...data.elevation);
+        }
+      } catch (e) {
+        console.warn('Elevation fetch failed:', e);
+        return null;
+      }
+    }
+
+    if (elevations.length !== sampled.length) return null;
+
+    // Calculate gain/loss
+    let gain = 0, loss = 0;
+    for (let i = 1; i < elevations.length; i++) {
+      const diff = elevations[i] - elevations[i - 1];
+      if (diff > 0) gain += diff;
+      else loss += Math.abs(diff);
+    }
+
+    return {
+      points: sampled,
+      distances,
+      elevations,
+      totalDistance: distances[distances.length - 1],
+      gain: Math.round(gain),
+      loss: Math.round(loss),
+      min: Math.round(Math.min(...elevations)),
+      max: Math.round(Math.max(...elevations))
+    };
+  },
+
+  renderElevationProfile(elData, container) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'elevation-profile';
+    wrapper.innerHTML = `
+      <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">
+        <i class="fas fa-mountain" style="color:var(--accent)"></i> Elevation Profile
+      </h4>
+      <div class="elevation-stats">
+        <span><i class="fas fa-arrow-up" style="color:#00c853"></i> ${elData.gain}m gain</span>
+        <span><i class="fas fa-arrow-down" style="color:#ff5252"></i> ${elData.loss}m loss</span>
+        <span><i class="fas fa-mountain"></i> ${elData.max}m max</span>
+      </div>
+      <div class="elevation-chart-wrap">
+        <canvas id="elevation-canvas" height="120"></canvas>
+        <div class="elevation-tooltip hidden" id="elevation-tooltip"></div>
+      </div>
+    `;
+    container.appendChild(wrapper);
+
+    const canvas = document.getElementById('elevation-canvas');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+
+    // Size canvas to container
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = '120px';
+    canvas.width = rect.width * dpr;
+    canvas.height = 120 * dpr;
+    ctx.scale(dpr, dpr);
+
+    const W = rect.width;
+    const H = 120;
+    const PAD = { top: 8, right: 8, bottom: 22, left: 42 };
+    const plotW = W - PAD.left - PAD.right;
+    const plotH = H - PAD.top - PAD.bottom;
+
+    const { distances, elevations, totalDistance } = elData;
+    const minElev = Math.min(...elevations) - 20;
+    const maxElev = Math.max(...elevations) + 20;
+    const elevRange = maxElev - minElev || 1;
+
+    const toX = (d) => PAD.left + (d / totalDistance) * plotW;
+    const toY = (e) => PAD.top + plotH - ((e - minElev) / elevRange) * plotH;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    const gridSteps = 4;
+    for (let i = 0; i <= gridSteps; i++) {
+      const y = PAD.top + (plotH / gridSteps) * i;
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, y);
+      ctx.lineTo(W - PAD.right, y);
+      ctx.stroke();
+
+      // Y-axis labels
+      const elev = maxElev - (elevRange / gridSteps) * i;
+      ctx.fillStyle = '#5a6f82';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(elev) + 'm', PAD.left - 4, y + 3);
+    }
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    const xSteps = Math.min(5, Math.floor(totalDistance / 10));
+    for (let i = 0; i <= xSteps; i++) {
+      const d = (totalDistance / xSteps) * i;
+      const x = toX(d);
+      ctx.fillStyle = '#5a6f82';
+      ctx.fillText(Math.round(d) + 'km', x, H - 4);
+    }
+
+    // Fill gradient
+    const grad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + plotH);
+    grad.addColorStop(0, 'rgba(0, 200, 83, 0.35)');
+    grad.addColorStop(1, 'rgba(0, 200, 83, 0.02)');
+
+    ctx.beginPath();
+    ctx.moveTo(toX(distances[0]), PAD.top + plotH);
+    for (let i = 0; i < distances.length; i++) {
+      ctx.lineTo(toX(distances[i]), toY(elevations[i]));
+    }
+    ctx.lineTo(toX(distances[distances.length - 1]), PAD.top + plotH);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(toX(distances[0]), toY(elevations[0]));
+    for (let i = 1; i < distances.length; i++) {
+      ctx.lineTo(toX(distances[i]), toY(elevations[i]));
+    }
+    ctx.strokeStyle = '#00c853';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Hover interaction
+    const tooltip = document.getElementById('elevation-tooltip');
+    const self = this;
+
+    canvas.addEventListener('mousemove', (e) => {
+      const cRect = canvas.getBoundingClientRect();
+      const mx = e.clientX - cRect.left;
+      const distAtMouse = ((mx - PAD.left) / plotW) * totalDistance;
+
+      if (distAtMouse < 0 || distAtMouse > totalDistance) {
+        tooltip.classList.add('hidden');
+        if (self.elevationMarker) { self.map.removeLayer(self.elevationMarker); self.elevationMarker = null; }
+        return;
+      }
+
+      // Find closest point
+      let closest = 0;
+      for (let i = 1; i < distances.length; i++) {
+        if (Math.abs(distances[i] - distAtMouse) < Math.abs(distances[closest] - distAtMouse)) {
+          closest = i;
+        }
+      }
+
+      const elev = elevations[closest];
+      const pt = elData.points[closest];
+      const x = toX(distances[closest]);
+      const y = toY(elev);
+
+      // Draw crosshair
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // Redraw (simple approach: just re-render the static parts aren't changing, so use overlay)
+      // Instead, use a simpler approach with tooltip positioning
+      tooltip.innerHTML = `<strong>${Math.round(elev)}m</strong><br>${distances[closest].toFixed(1)}km`;
+      tooltip.style.left = (mx - 30) + 'px';
+      tooltip.style.top = (y - 40) + 'px';
+      tooltip.classList.remove('hidden');
+
+      // Show marker on map
+      if (self.elevationMarker) self.map.removeLayer(self.elevationMarker);
+      self.elevationMarker = L.circleMarker([pt.lat, pt.lng], {
+        radius: 6, color: '#00c853', fillColor: '#00c853', fillOpacity: 1, weight: 2
+      }).addTo(self.map);
+      self.elevationMarker.bindTooltip(`${Math.round(elev)}m`, { permanent: true, direction: 'top', className: 'elevation-map-tooltip' }).openTooltip();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      tooltip.classList.add('hidden');
+      if (self.elevationMarker) { self.map.removeLayer(self.elevationMarker); self.elevationMarker = null; }
+    });
+
+    canvas.addEventListener('click', (e) => {
+      const cRect = canvas.getBoundingClientRect();
+      const mx = e.clientX - cRect.left;
+      const distAtMouse = ((mx - PAD.left) / plotW) * totalDistance;
+      if (distAtMouse < 0 || distAtMouse > totalDistance) return;
+
+      let closest = 0;
+      for (let i = 1; i < distances.length; i++) {
+        if (Math.abs(distances[i] - distAtMouse) < Math.abs(distances[closest] - distAtMouse)) closest = i;
+      }
+      const pt = elData.points[closest];
+      self.map.panTo([pt.lat, pt.lng]);
+    });
+  },
+
   clearRouteDisplay() {
     if (this.routeControl) {
       this.map.removeControl(this.routeControl);
@@ -439,6 +680,7 @@ const RoutePlanner = {
     }
     this.routeMarkers.forEach(m => this.map.removeLayer(m));
     this.routeMarkers = [];
+    if (this.elevationMarker) { this.map.removeLayer(this.elevationMarker); this.elevationMarker = null; }
     this.clearGravelOverlays();
   },
 
