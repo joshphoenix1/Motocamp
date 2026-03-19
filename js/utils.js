@@ -40,14 +40,14 @@ const Utils = {
     return L.divIcon({
       className: `custom-marker marker-${type}`,
       html: `<i class="fas fa-${icon}"></i>`,
-      iconSize: type === 'campsite' ? [18, 18] :
-                type === 'commercial' ? [16, 16] :
-                type === 'fuel' ? [16, 16] :
-                type === 'freedom' ? [14, 14] : [14, 14],
-      iconAnchor: type === 'campsite' ? [9, 9] :
-                  type === 'commercial' ? [8, 8] :
-                  type === 'fuel' ? [8, 8] :
-                  type === 'freedom' ? [7, 7] : [7, 7],
+      iconSize: type === 'campsite' ? [12, 12] :
+                type === 'commercial' ? [14, 14] :
+                type === 'fuel' ? [14, 14] :
+                type === 'freedom' ? [12, 12] : [12, 12],
+      iconAnchor: type === 'campsite' ? [6, 6] :
+                  type === 'commercial' ? [7, 7] :
+                  type === 'fuel' ? [7, 7] :
+                  type === 'freedom' ? [6, 6] : [6, 6],
     });
   },
 
