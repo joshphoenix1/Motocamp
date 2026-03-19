@@ -445,12 +445,15 @@ const Layers = {
 
     // Opening hours
     const hours = props.opening_hours || null;
+    const isDOC = typeDesc.includes('Basic') || typeDesc.includes('Backcountry') || typeDesc.includes('Standard') || typeDesc.includes('Serviced') || typeDesc.includes('Great Walk') || typeDesc.includes('Scenic');
     const hoursHTML = hours
       ? `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value">${hours}</div></div>`
-      : `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value" style="color:var(--accent)">Open 24/7 (typical for DOC sites)</div></div>`;
+      : isDOC
+        ? `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value" style="color:var(--accent)">Open 24/7</div></div>`
+        : `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value">Check with operator</div></div>`;
 
     // Operator
-    const operator = props.operator || (typeDesc.includes('DOC') || typeDesc.includes('Basic') || typeDesc.includes('Backcountry') || typeDesc.includes('Standard') || typeDesc.includes('Serviced') || typeDesc.includes('Great Walk') ? 'Department of Conservation (DOC)' : props.brand || '');
+    const operator = props.operator || (isDOC ? 'Department of Conservation (DOC)' : props.brand || '');
 
     // Capacity
     const capacity = props.capacity ? `<div class="info-detail"><div class="info-detail-label">Capacity</div><div class="info-detail-value">${props.capacity} sites</div></div>` : '';
