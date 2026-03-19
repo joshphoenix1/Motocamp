@@ -326,7 +326,7 @@ const Layers = {
           legend.classList.remove('hidden');
         } else {
           this.activeWeatherType = null;
-          Weather.removeOverlay(this.map);
+          Weather.removeOverlay();
           Weather.stopAnimation();
           document.getElementById('weather-timeline').classList.add('hidden');
           document.getElementById('weather-legend').classList.add('hidden');
@@ -340,8 +340,9 @@ const Layers = {
 
     const onSliderChange = (val) => {
       const hour = parseInt(val);
+      Weather.currentHourOffset = hour;
       if (this.activeWeatherType) {
-        Weather.createOverlay(this.map, this.activeWeatherType, hour);
+        Weather.render();
       }
       Weather.updateTimeLabel(hour);
     };
@@ -362,7 +363,7 @@ const Layers = {
       const btn = e.currentTarget;
       if (playing && this.activeWeatherType) {
         btn.innerHTML = '<i class="fas fa-pause"></i>';
-        Weather.startAnimation(this.map, this.activeWeatherType);
+        Weather.startAnimation(this.activeWeatherType);
       } else {
         btn.innerHTML = '<i class="fas fa-play"></i>';
         Weather.stopAnimation();
