@@ -1,11 +1,42 @@
-/* ===== Data Loader — Static GeoJSON Files ===== */
+/* ===== Data Loader — Static GeoJSON with Cache API ===== */
 const DataLoader = {
   cache: {},
+  CACHE_NAME: 'motocamp-data-v1',
+  CACHE_TTL: 24 * 60 * 60 * 1000, // 24 hours
 
   async loadJSON(url) {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.status}`);
-    return resp.json();
+    // Try Cache API first for instant load
+    try {
+      const cache = await caches.open(this.CACHE_NAME);
+      const cached = await cache.match(url);
+
+      if (cached) {
+        const age = Date.now() - new Date(cached.headers.get('x-cached-at') || 0).getTime();
+        if (age < this.CACHE_TTL) {
+          console.log(`[Cache HIT] ${url}`);
+          return cached.json();
+        }
+      }
+
+      // Fetch fresh and cache
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.status}`);
+
+      const data = await resp.json();
+
+      // Store in cache with timestamp
+      const headers = new Headers({ 'Content-Type': 'application/json', 'x-cached-at': new Date().toISOString() });
+      const cacheResp = new Response(JSON.stringify(data), { headers });
+      await cache.put(url, cacheResp);
+      console.log(`[Cache STORE] ${url}`);
+
+      return data;
+    } catch (e) {
+      // Fallback: direct fetch without caching
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.status}`);
+      return resp.json();
+    }
   },
 
   async loadDOCCampsites() {
@@ -77,5 +108,11 @@ const DataLoader = {
 
     this.cache = results;
     return results;
+  },
+
+  // Clear cache (for data updates)
+  async clearCache() {
+    await caches.delete(this.CACHE_NAME);
+    console.log('[Cache CLEARED]');
   }
 };
