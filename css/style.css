@@ -406,9 +406,9 @@ body {
   width: 14px; height: 14px;
   background: var(--accent); border-radius: 50%; cursor: pointer;
 }
-#weather-timeline-labels { display: flex; justify-content: space-between; margin-top: 2px; }
+#weather-timeline-labels { display: flex; justify-content: space-between; margin-top: 2px; overflow: hidden; }
 #weather-timeline-labels span { font-size: 0.6rem; color: var(--text-muted); }
-#weather-timeline-time { font-size: 0.75rem; color: var(--accent); font-weight: 600; white-space: nowrap; min-width: 80px; text-align: right; }
+#weather-timeline-time { font-size: 0.75rem; color: var(--accent); font-weight: 600; white-space: nowrap; min-width: 80px; text-align: right; flex-shrink: 0; align-self: flex-start; margin-left: 4px; }
 
 /* ===== Info Panel ===== */
 #info-panel {
