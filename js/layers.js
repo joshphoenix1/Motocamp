@@ -196,12 +196,17 @@ const Layers = {
 
     for (const [key, points] of Object.entries(heatData)) {
       const heat = L.heatLayer(points, {
-        radius: 25,
-        blur: 20,
-        maxZoom: 12,
+        radius: 18,
+        blur: 15,
+        maxZoom: 10,
         max: 1.0,
-        minOpacity: 0.15,
+        minOpacity: 0.05,
         gradient: gradients[key]
+      });
+      // Keep heatmap subtle so it doesn't overwhelm the map
+      heat.on('add', function() {
+        const el = this._canvas || this._container;
+        if (el) el.style.opacity = '0.35';
       });
       this.groups[key] = heat;
       this.map.addLayer(heat);
