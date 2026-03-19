@@ -19,17 +19,6 @@ const DataLoader = {
     }
   },
 
-  async loadDOCHuts() {
-    try {
-      const data = await this.loadJSON('data/doc-huts.geojson');
-      console.log(`Loaded ${data.features?.length || 0} DOC huts`);
-      return data;
-    } catch (e) {
-      console.warn('Failed to load DOC huts:', e);
-      return { type: 'FeatureCollection', features: [] };
-    }
-  },
-
   async loadOSMCampsites() {
     try {
       const data = await this.loadJSON('data/osm-campsites.geojson');
@@ -159,7 +148,6 @@ const DataLoader = {
   async loadAll(progressCallback) {
     const tasks = [
       { key: 'docCampsites', fn: () => this.loadDOCCampsites(), label: 'DOC Campsites' },
-      { key: 'docHuts', fn: () => this.loadDOCHuts(), label: 'DOC Huts' },
       { key: 'osmCampsites', fn: () => this.loadOSMCampsites(), label: 'Holiday Parks' },
       { key: 'osmAmenities', fn: () => this.loadOSMAmenities(), label: 'Services' },
       { key: 'cellTowers', fn: () => this.loadCellTowers(), label: 'Cell Towers' },

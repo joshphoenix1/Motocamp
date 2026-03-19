@@ -41,12 +41,10 @@ const Utils = {
       className: `custom-marker marker-${type}`,
       html: `<i class="fas fa-${icon}"></i>`,
       iconSize: type === 'campsite' ? [18, 18] :
-                type === 'hut' ? [16, 16] :
                 type === 'commercial' ? [16, 16] :
                 type === 'fuel' ? [16, 16] :
                 type === 'freedom' ? [14, 14] : [14, 14],
       iconAnchor: type === 'campsite' ? [9, 9] :
-                  type === 'hut' ? [8, 8] :
                   type === 'commercial' ? [8, 8] :
                   type === 'fuel' ? [8, 8] :
                   type === 'freedom' ? [7, 7] : [7, 7],
@@ -89,18 +87,6 @@ const Utils = {
       fee: 'Free', feeLevel: 'free',
       description: 'Basic toilet. Water may be from a stream (untreated). Pack in, pack out.'
     },
-    'Backcountry Campsite': {
-      toilets: true, water: 'stream', showers: false, power: false, kitchen: false,
-      bbq: false, rubbish: false, tables: false,
-      fee: 'Free-$8/night', feeLevel: 'free',
-      description: 'Remote campsite with basic or long-drop toilet. Stream water only.'
-    },
-    'Great Walk Campsite': {
-      toilets: true, water: true, showers: false, power: false, kitchen: true,
-      bbq: false, rubbish: false, tables: true,
-      fee: '$15-$32/night', feeLevel: 'paid',
-      description: 'Great Walk campsite with toilet, water, cooking shelter, and bunks.'
-    }
   },
 
   // Get facility info for a DOC campsite type

@@ -34,6 +34,11 @@ const Layers = {
         const props = f.properties;
         const name = props.DESCRIPTION || props.name || 'DOC Campsite';
         const typeDesc = props.OBJECT_TYPE_DESCRIPTION || 'Standard Campsite';
+
+        // Skip backcountry and Great Walk campsites — not vehicle accessible
+        const typeLower = typeDesc.toLowerCase();
+        if (typeLower.includes('backcountry') || typeLower.includes('great walk')) continue;
+
         const facilities = Utils.getFacilities(typeDesc);
 
         const marker = L.marker([lat, lon], {
@@ -48,33 +53,6 @@ const Layers = {
     this.groups['doc-campsites'] = docCampsiteGroup;
     this.map.addLayer(docCampsiteGroup);
 
-    // DOC Huts
-    const docHutGroup = L.markerClusterGroup({
-      maxClusterRadius: 35,
-      iconCreateFunction: (cluster) => L.divIcon({
-        html: `<div>${cluster.getChildCount()}</div>`,
-        className: 'marker-cluster marker-cluster-hut',
-        iconSize: [32, 32]
-      })
-    });
-
-    if (data.docHuts?.features) {
-      for (const f of data.docHuts.features) {
-        const [lon, lat] = f.geometry.coordinates;
-        const props = f.properties;
-        const name = props.DESCRIPTION || props.name || 'DOC Hut';
-
-        const marker = L.marker([lat, lon], {
-          icon: Utils.createMarker('hut', 'house-chimney')
-        });
-
-        marker.on('click', () => this.showHutInfo(name, props, lat, lon));
-        docHutGroup.addLayer(marker);
-      }
-    }
-    this.groups['doc-huts'] = docHutGroup;
-    this.map.addLayer(docHutGroup);
-
     // OSM Campsites (commercial and freedom)
     const commercialGroup = L.markerClusterGroup({ maxClusterRadius: 35 });
     const freedomGroup = L.markerClusterGroup({ maxClusterRadius: 30 });
@@ -85,8 +63,11 @@ const Layers = {
         const props = f.properties;
         const name = props.name || 'Campsite';
 
+        // Skip backcountry / no vehicle access sites
+        if (props.backcountry === 'yes' || props.access === 'no') continue;
+
         // Determine if commercial or freedom camping
-        const isFreedom = props.fee === 'no' || props.backcountry === 'yes' ||
+        const isFreedom = props.fee === 'no' ||
                          (name.toLowerCase().includes('freedom') || name.toLowerCase().includes('free camp'));
 
         const marker = L.marker([lat, lon], {
@@ -556,104 +537,6 @@ const Layers = {
     }
 
     // Load weather async so panel shows immediately
-    const weatherData = await Weather.fetchPointWeather(lat, lon);
-    const weatherHTML = Weather.buildWeatherHTML(weatherData);
-    const wxEl = document.getElementById('info-weather-loading');
-    if (wxEl) wxEl.innerHTML = weatherHTML;
-  },
-
-  async showHutInfo(name, props, lat, lon) {
-    const cellInfo = this.findCellCoverage(lat, lon);
-    const nearbyStats = this.getNearbyStats(lat, lon);
-    const hutCategory = props.OBJECT_TYPE_DESCRIPTION || 'Standard Hut';
-
-    const panel = document.getElementById('info-panel');
-    const content = document.getElementById('info-content');
-
-    // Determine hut facilities based on category
-    const isGreatWalk = hutCategory.toLowerCase().includes('great walk');
-    const isServiced = hutCategory.toLowerCase().includes('serviced') || isGreatWalk;
-
-    content.innerHTML = `
-      <div class="info-header">
-        <h2>${name}</h2>
-        <span class="info-type">DOC Hut — ${hutCategory}</span>
-        <span class="info-status ${(props.STATUS || 'OPEN') === 'OPEN' ? 'open' : 'closed'}">${props.STATUS || 'Open'}</span>
-      </div>
-
-      <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px"><i class="fas fa-building" style="width:16px;color:var(--accent)"></i> Department of Conservation (DOC)</div>
-
-      <div class="info-facilities">
-        <span class="facility-badge available"><i class="fas fa-bed"></i> Bunks</span>
-        <span class="facility-badge available"><i class="fas fa-toilet"></i> Toilet</span>
-        <span class="facility-badge available"><i class="fas fa-droplet"></i> Water</span>
-        <span class="facility-badge available"><i class="fas fa-fire"></i> Fireplace</span>
-        ${isServiced ? '<span class="facility-badge available"><i class="fas fa-utensils"></i> Kitchen</span>' : ''}
-        ${isServiced ? '<span class="facility-badge available"><i class="fas fa-lightbulb"></i> Lighting</span>' : ''}
-        ${isGreatWalk ? '<span class="facility-badge available"><i class="fas fa-gas-pump"></i> Gas Cooker</span>' : ''}
-        <span class="facility-badge"><i class="fas fa-plug"></i> No Power</span>
-        <span class="facility-badge"><i class="fas fa-wifi"></i> No WiFi</span>
-      </div>
-
-      <div class="info-details">
-        <div class="info-detail">
-          <div class="info-detail-label">Fee</div>
-          <div class="info-detail-value">${isGreatWalk ? '$32-$75/night (booking required)' : isServiced ? '$15/night (hut pass or ticket)' : '$5/night (backcountry pass)'}</div>
-        </div>
-        <div class="info-detail">
-          <div class="info-detail-label">Bookings</div>
-          <div class="info-detail-value">${isGreatWalk ? 'Required — book via DOC' : 'First come, first served'}</div>
-        </div>
-        <div class="info-detail">
-          <div class="info-detail-label">Access</div>
-          <div class="info-detail-value">Walking/tramping only</div>
-        </div>
-        <div class="info-detail">
-          <div class="info-detail-label">Coordinates</div>
-          <div class="info-detail-value">${lat.toFixed(4)}, ${lon.toFixed(4)}</div>
-        </div>
-      </div>
-
-      <div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;margin-bottom:16px">
-        <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-map-signs" style="color:var(--accent)"></i> Nearby (within 20km)</h4>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          <span class="facility-badge ${nearbyStats.campsites > 0 ? 'available' : ''}"><i class="fas fa-campground"></i> ${nearbyStats.campsites} Campsites</span>
-          <span class="facility-badge ${nearbyStats.fuel > 0 ? 'available' : ''}"><i class="fas fa-gas-pump"></i> ${nearbyStats.fuel} Fuel</span>
-          <span class="facility-badge ${nearbyStats.shops > 0 ? 'available' : ''}"><i class="fas fa-store"></i> ${nearbyStats.shops} Shops</span>
-        </div>
-      </div>
-
-      <div class="info-cell-coverage">
-        <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">
-          <i class="fas fa-signal" style="color:var(--accent)"></i> Cell Coverage (estimated)
-        </h4>
-        ${this.buildCellCoverageHTML(cellInfo)}
-      </div>
-
-      <div class="info-weather">
-        <h4><i class="fas fa-cloud-sun"></i> 7-Day Forecast</h4>
-        <div id="info-weather-loading"><p style="color:var(--text-muted);font-size:0.8rem"><i class="fas fa-spinner fa-spin"></i> Loading weather...</p></div>
-      </div>
-
-      <div class="info-actions">
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="btn btn-sm">
-          <i class="fas fa-directions"></i> Navigate
-        </a>
-        <button class="btn btn-sm" onclick="RoutePlanner.addAsWaypoint(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')">
-          <i class="fas fa-plus"></i> Add to Route
-        </button>
-        <a href="https://www.doc.govt.nz/search?q=${encodeURIComponent(name)}" target="_blank" class="btn btn-sm">
-          <i class="fas fa-leaf"></i> DOC Page
-        </a>
-        <a href="https://www.google.com/search?q=${encodeURIComponent(name + ' hut NZ reviews')}" target="_blank" class="btn btn-sm">
-          <i class="fas fa-star"></i> Reviews
-        </a>
-      </div>
-    `;
-
-    panel.classList.remove('hidden');
-
-    // Load weather async
     const weatherData = await Weather.fetchPointWeather(lat, lon);
     const weatherHTML = Weather.buildWeatherHTML(weatherData);
     const wxEl = document.getElementById('info-weather-loading');

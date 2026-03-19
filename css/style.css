@@ -575,7 +575,6 @@ body {
 }
 .custom-marker:hover { transform: scale(1.2); }
 .marker-campsite { background: #00c853; color: #fff; width: 18px; height: 18px; font-size: 9px; }
-.marker-hut { background: #ff9800; color: #fff; width: 16px; height: 16px; font-size: 8px; }
 .marker-commercial { background: #2196f3; color: #fff; width: 16px; height: 16px; font-size: 8px; }
 .marker-freedom { background: #9c27b0; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-toilet { background: #607d8b; color: #fff; width: 14px; height: 14px; font-size: 7px; }
