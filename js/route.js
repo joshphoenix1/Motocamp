@@ -171,8 +171,8 @@ const RoutePlanner = {
         alternatives: true,
         lineOptions: {
           styles: [
-            { color: '#00c853', opacity: 0.8, weight: 5 },
-            { color: '#00e676', opacity: 0.4, weight: 9 }
+            { color: '#ff1744', opacity: 0.85, weight: 5 },
+            { color: '#ff5252', opacity: 0.4, weight: 9 }
           ],
           altLineOptions: {
             styles: [
@@ -211,7 +211,7 @@ const RoutePlanner = {
       console.error('Routing failed:', e);
       // Fallback: draw straight lines
       this.routeLine = L.polyline(allPoints, {
-        color: '#00c853', weight: 4, opacity: 0.7, dashArray: '10, 10'
+        color: '#ff1744', weight: 4, opacity: 0.7, dashArray: '10, 10'
       }).addTo(this.map);
       this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
     }
