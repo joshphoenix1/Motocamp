@@ -512,20 +512,15 @@ const Layers = {
         <button class="btn btn-sm" onclick="RoutePlanner.addAsWaypoint(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')">
           <i class="fas fa-plus"></i> Add to Route
         </button>
-        ${props.URL || props.website ? `
-        <a href="${props.URL || props.website}" target="_blank" class="btn btn-sm">
-          <i class="fas fa-external-link-alt"></i> Website
-        </a>` : ''}
+        <a href="${props.website || props.url || props['contact:website'] || props.URL || (operator === 'Department of Conservation (DOC)' ? 'https://www.doc.govt.nz/search?q=' + encodeURIComponent(name) : 'https://www.google.com/search?q=' + encodeURIComponent(name + ' NZ campsite'))}" target="_blank" class="btn btn-sm">
+          <i class="fas fa-globe"></i> Website
+        </a>
         <a href="https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lon},15z" target="_blank" class="btn btn-sm">
           <i class="fab fa-google"></i> Google Maps
         </a>
         <a href="https://www.google.com/search?q=${encodeURIComponent(name + ' campsite NZ reviews')}" target="_blank" class="btn btn-sm">
           <i class="fas fa-star"></i> Reviews
         </a>
-        ${operator === 'Department of Conservation (DOC)' ? `
-        <a href="https://www.doc.govt.nz/search?q=${encodeURIComponent(name)}" target="_blank" class="btn btn-sm">
-          <i class="fas fa-leaf"></i> DOC Page
-        </a>` : ''}
       </div>
     `;
 
