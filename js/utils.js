@@ -40,16 +40,16 @@ const Utils = {
     return L.divIcon({
       className: `custom-marker marker-${type}`,
       html: `<i class="fas fa-${icon}"></i>`,
-      iconSize: type === 'campsite' ? [28, 28] :
-                type === 'hut' ? [26, 26] :
-                type === 'commercial' ? [26, 26] :
-                type === 'fuel' ? [24, 24] :
-                type === 'freedom' ? [24, 24] : [22, 22],
-      iconAnchor: type === 'campsite' ? [14, 14] :
-                  type === 'hut' ? [13, 13] :
-                  type === 'commercial' ? [13, 13] :
-                  type === 'fuel' ? [12, 12] :
-                  type === 'freedom' ? [12, 12] : [11, 11],
+      iconSize: type === 'campsite' ? [18, 18] :
+                type === 'hut' ? [16, 16] :
+                type === 'commercial' ? [16, 16] :
+                type === 'fuel' ? [16, 16] :
+                type === 'freedom' ? [14, 14] : [14, 14],
+      iconAnchor: type === 'campsite' ? [9, 9] :
+                  type === 'hut' ? [8, 8] :
+                  type === 'commercial' ? [8, 8] :
+                  type === 'fuel' ? [8, 8] :
+                  type === 'freedom' ? [7, 7] : [7, 7],
     });
   },
 
@@ -58,8 +58,8 @@ const Utils = {
     return L.divIcon({
       className: `custom-marker marker-tower ${cls}`,
       html: '<i class="fas fa-signal"></i>',
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
     });
   },
 
