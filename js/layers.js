@@ -173,10 +173,13 @@ const Layers = {
         const [lon, lat] = f.geometry.coordinates;
         const props = f.properties;
 
-        // Intensity based on technology (newer = stronger signal area)
-        const intensity = props.technology === '4G' ? 0.8 :
-                          props.technology === '3G' ? 0.5 :
-                          props.technology === '5G' ? 1.0 : 0.3;
+        // Intensity based on technology and range
+        // Higher range = more coverage spread, stronger presence
+        const techBase = props.technology === '4G' ? 0.9 :
+                         props.technology === '3G' ? 0.6 :
+                         props.technology === '5G' ? 1.0 : 0.4;
+        const rangeBoost = Math.min((props.range || 5000) / 15000, 1.0);
+        const intensity = techBase * (0.5 + 0.5 * rangeBoost);
 
         const key = props.carrier === 'Spark' ? 'cell-spark' :
                     props.carrier === 'One NZ' ? 'cell-vodafone' : 'cell-2degrees';
@@ -196,17 +199,17 @@ const Layers = {
 
     for (const [key, points] of Object.entries(heatData)) {
       const heat = L.heatLayer(points, {
-        radius: 18,
-        blur: 15,
-        maxZoom: 10,
+        radius: 35,
+        blur: 30,
+        maxZoom: 11,
         max: 1.0,
-        minOpacity: 0.05,
+        minOpacity: 0.03,
         gradient: gradients[key]
       });
       // Keep heatmap subtle so it doesn't overwhelm the map
       heat.on('add', function() {
         const el = this._canvas || this._container;
-        if (el) el.style.opacity = '0.35';
+        if (el) el.style.opacity = '0.4';
       });
       this.groups[key] = heat;
       this.map.addLayer(heat);
