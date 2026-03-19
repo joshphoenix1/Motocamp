@@ -386,12 +386,14 @@ const Layers = {
       })
     };
 
-    // Remove the initial base layer added in app.js, replace with managed one
-    this.map.eachLayer(layer => {
-      if (layer instanceof L.TileLayer) this.map.removeLayer(layer);
-    });
+    // Remove only the initial tile layer added in app.js, not cluster layers
+    if (window._initialTileLayer) {
+      this.map.removeLayer(window._initialTileLayer);
+      window._initialTileLayer = null;
+    }
     let activeBasemap = basemaps.streets;
     this.map.addLayer(activeBasemap);
+    activeBasemap.bringToBack();
 
     document.querySelectorAll('.basemap-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -410,8 +412,8 @@ const Layers = {
     const panel = document.getElementById('info-panel');
     const content = document.getElementById('info-content');
 
-    const status = props.STATUS || 'OPEN';
-    const isOpen = status === 'OPEN';
+    const status = props.STATUS || props.status || 'OPEN';
+    const isOpen = String(status).toUpperCase() === 'OPEN';
 
     // Build facility badges
     const facilityIcons = [
@@ -441,10 +443,29 @@ const Layers = {
     // Find nearby cell coverage
     const cellInfo = this.findCellCoverage(lat, lon);
 
-    // Fetch weather
-    const weatherData = await Weather.fetchPointWeather(lat, lon);
-    const weatherHTML = Weather.buildWeatherHTML(weatherData);
+    // Opening hours
+    const hours = props.opening_hours || null;
+    const hoursHTML = hours
+      ? `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value">${hours}</div></div>`
+      : `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value" style="color:var(--accent)">Open 24/7 (typical for DOC sites)</div></div>`;
 
+    // Operator
+    const operator = props.operator || (typeDesc.includes('DOC') || typeDesc.includes('Basic') || typeDesc.includes('Backcountry') || typeDesc.includes('Standard') || typeDesc.includes('Serviced') || typeDesc.includes('Great Walk') ? 'Department of Conservation (DOC)' : props.brand || '');
+
+    // Capacity
+    const capacity = props.capacity ? `<div class="info-detail"><div class="info-detail-label">Capacity</div><div class="info-detail-value">${props.capacity} sites</div></div>` : '';
+
+    // Pets/dogs
+    const pets = props.dog === 'yes' ? 'Dogs allowed' : props.dog === 'no' ? 'No dogs' : '';
+
+    // Bookings
+    const reservation = props.reservation || (typeDesc.includes('Great Walk') ? 'required' : typeDesc.includes('Serviced') ? 'recommended' : '');
+    const reservationHTML = reservation ? `<div class="info-detail"><div class="info-detail-label">Bookings</div><div class="info-detail-value" style="text-transform:capitalize">${reservation}</div></div>` : '';
+
+    // Nearby stats
+    const nearbyStats = this.getNearbyStats(lat, lon);
+
+    // Show panel immediately with placeholder for weather
     content.innerHTML = `
       <div class="info-header">
         <h2>${name}</h2>
@@ -452,13 +473,19 @@ const Layers = {
         <span class="info-status ${isOpen ? 'open' : 'closed'}">${isOpen ? 'Open' : 'Closed'}</span>
       </div>
 
+      ${operator ? `<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px"><i class="fas fa-building" style="width:16px;color:var(--accent)"></i> ${operator}</div>` : ''}
+
       <div class="info-facilities">${facilityHTML}</div>
 
       <div class="info-details">
         <div class="info-detail">
           <div class="info-detail-label">Fee</div>
-          <div class="info-detail-value">${facilities.fee || 'Check DOC website'}</div>
+          <div class="info-detail-value">${facilities.fee || props.charge || props.fee || 'Check website'}</div>
         </div>
+        ${hoursHTML}
+        ${reservationHTML}
+        ${capacity}
+        ${pets ? `<div class="info-detail"><div class="info-detail-label">Pets</div><div class="info-detail-value">${pets}</div></div>` : ''}
         <div class="info-detail">
           <div class="info-detail-label">Coordinates</div>
           <div class="info-detail-value">${lat.toFixed(4)}, ${lon.toFixed(4)}</div>
@@ -470,6 +497,17 @@ const Layers = {
         </div>` : ''}
       </div>
 
+      <div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;margin-bottom:16px">
+        <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-map-signs" style="color:var(--accent)"></i> Nearby (within 20km)</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="facility-badge ${nearbyStats.campsites > 0 ? 'available' : ''}"><i class="fas fa-campground"></i> ${nearbyStats.campsites} Campsites</span>
+          <span class="facility-badge ${nearbyStats.fuel > 0 ? 'available' : ''}"><i class="fas fa-gas-pump"></i> ${nearbyStats.fuel} Fuel</span>
+          <span class="facility-badge ${nearbyStats.shops > 0 ? 'available' : ''}"><i class="fas fa-store"></i> ${nearbyStats.shops} Shops</span>
+          <span class="facility-badge ${nearbyStats.water > 0 ? 'available' : ''}"><i class="fas fa-droplet"></i> ${nearbyStats.water} Water</span>
+          <span class="facility-badge ${nearbyStats.toilets > 0 ? 'available' : ''}"><i class="fas fa-toilet"></i> ${nearbyStats.toilets} Toilets</span>
+        </div>
+      </div>
+
       <div class="info-cell-coverage">
         <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">
           <i class="fas fa-signal" style="color:var(--accent)"></i> Cell Coverage (estimated)
@@ -479,7 +517,7 @@ const Layers = {
 
       <div class="info-weather">
         <h4><i class="fas fa-cloud-sun"></i> 7-Day Forecast</h4>
-        ${weatherHTML}
+        <div id="info-weather-loading"><p style="color:var(--text-muted);font-size:0.8rem"><i class="fas fa-spinner fa-spin"></i> Loading weather...</p></div>
       </div>
 
       <div class="info-actions">
@@ -493,6 +531,16 @@ const Layers = {
         <a href="${props.URL || props.website}" target="_blank" class="btn btn-sm">
           <i class="fas fa-external-link-alt"></i> Website
         </a>` : ''}
+        <a href="https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lon},15z" target="_blank" class="btn btn-sm">
+          <i class="fab fa-google"></i> Google Maps
+        </a>
+        <a href="https://www.google.com/search?q=${encodeURIComponent(name + ' campsite NZ reviews')}" target="_blank" class="btn btn-sm">
+          <i class="fas fa-star"></i> Reviews
+        </a>
+        ${operator === 'Department of Conservation (DOC)' ? `
+        <a href="https://www.doc.govt.nz/search?q=${encodeURIComponent(name)}" target="_blank" class="btn btn-sm">
+          <i class="fas fa-leaf"></i> DOC Page
+        </a>` : ''}
       </div>
     `;
 
@@ -502,38 +550,72 @@ const Layers = {
     if (window.innerWidth <= 768) {
       document.getElementById('sidebar').classList.remove('open');
     }
+
+    // Load weather async so panel shows immediately
+    const weatherData = await Weather.fetchPointWeather(lat, lon);
+    const weatherHTML = Weather.buildWeatherHTML(weatherData);
+    const wxEl = document.getElementById('info-weather-loading');
+    if (wxEl) wxEl.innerHTML = weatherHTML;
   },
 
   async showHutInfo(name, props, lat, lon) {
-    const weatherData = await Weather.fetchPointWeather(lat, lon);
-    const weatherHTML = Weather.buildWeatherHTML(weatherData);
     const cellInfo = this.findCellCoverage(lat, lon);
+    const nearbyStats = this.getNearbyStats(lat, lon);
+    const hutCategory = props.OBJECT_TYPE_DESCRIPTION || 'Standard Hut';
 
     const panel = document.getElementById('info-panel');
     const content = document.getElementById('info-content');
 
+    // Determine hut facilities based on category
+    const isGreatWalk = hutCategory.toLowerCase().includes('great walk');
+    const isServiced = hutCategory.toLowerCase().includes('serviced') || isGreatWalk;
+
     content.innerHTML = `
       <div class="info-header">
         <h2>${name}</h2>
-        <span class="info-type">DOC Hut</span>
-        <span class="info-status open">${props.STATUS || 'Open'}</span>
+        <span class="info-type">DOC Hut — ${hutCategory}</span>
+        <span class="info-status ${(props.STATUS || 'OPEN') === 'OPEN' ? 'open' : 'closed'}">${props.STATUS || 'Open'}</span>
       </div>
+
+      <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px"><i class="fas fa-building" style="width:16px;color:var(--accent)"></i> Department of Conservation (DOC)</div>
 
       <div class="info-facilities">
         <span class="facility-badge available"><i class="fas fa-bed"></i> Bunks</span>
         <span class="facility-badge available"><i class="fas fa-toilet"></i> Toilet</span>
         <span class="facility-badge available"><i class="fas fa-droplet"></i> Water</span>
         <span class="facility-badge available"><i class="fas fa-fire"></i> Fireplace</span>
+        ${isServiced ? '<span class="facility-badge available"><i class="fas fa-utensils"></i> Kitchen</span>' : ''}
+        ${isServiced ? '<span class="facility-badge available"><i class="fas fa-lightbulb"></i> Lighting</span>' : ''}
+        ${isGreatWalk ? '<span class="facility-badge available"><i class="fas fa-gas-pump"></i> Gas Cooker</span>' : ''}
+        <span class="facility-badge"><i class="fas fa-plug"></i> No Power</span>
+        <span class="facility-badge"><i class="fas fa-wifi"></i> No WiFi</span>
       </div>
 
       <div class="info-details">
         <div class="info-detail">
           <div class="info-detail-label">Fee</div>
-          <div class="info-detail-value">$5-$15/night (backcountry pass)</div>
+          <div class="info-detail-value">${isGreatWalk ? '$32-$75/night (booking required)' : isServiced ? '$15/night (hut pass or ticket)' : '$5/night (backcountry pass)'}</div>
+        </div>
+        <div class="info-detail">
+          <div class="info-detail-label">Bookings</div>
+          <div class="info-detail-value">${isGreatWalk ? 'Required — book via DOC' : 'First come, first served'}</div>
+        </div>
+        <div class="info-detail">
+          <div class="info-detail-label">Access</div>
+          <div class="info-detail-value">Walking/tramping only</div>
         </div>
         <div class="info-detail">
           <div class="info-detail-label">Coordinates</div>
           <div class="info-detail-value">${lat.toFixed(4)}, ${lon.toFixed(4)}</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg-tertiary);border-radius:var(--radius);padding:12px;margin-bottom:16px">
+        <h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px"><i class="fas fa-map-signs" style="color:var(--accent)"></i> Nearby (within 20km)</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="facility-badge ${nearbyStats.campsites > 0 ? 'available' : ''}"><i class="fas fa-campground"></i> ${nearbyStats.campsites} Campsites</span>
+          <span class="facility-badge ${nearbyStats.fuel > 0 ? 'available' : ''}"><i class="fas fa-gas-pump"></i> ${nearbyStats.fuel} Fuel</span>
+          <span class="facility-badge ${nearbyStats.shops > 0 ? 'available' : ''}"><i class="fas fa-store"></i> ${nearbyStats.shops} Shops</span>
         </div>
       </div>
 
@@ -546,7 +628,7 @@ const Layers = {
 
       <div class="info-weather">
         <h4><i class="fas fa-cloud-sun"></i> 7-Day Forecast</h4>
-        ${weatherHTML}
+        <div id="info-weather-loading"><p style="color:var(--text-muted);font-size:0.8rem"><i class="fas fa-spinner fa-spin"></i> Loading weather...</p></div>
       </div>
 
       <div class="info-actions">
@@ -556,10 +638,52 @@ const Layers = {
         <button class="btn btn-sm" onclick="RoutePlanner.addAsWaypoint(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')">
           <i class="fas fa-plus"></i> Add to Route
         </button>
+        <a href="https://www.doc.govt.nz/search?q=${encodeURIComponent(name)}" target="_blank" class="btn btn-sm">
+          <i class="fas fa-leaf"></i> DOC Page
+        </a>
+        <a href="https://www.google.com/search?q=${encodeURIComponent(name + ' hut NZ reviews')}" target="_blank" class="btn btn-sm">
+          <i class="fas fa-star"></i> Reviews
+        </a>
       </div>
     `;
 
     panel.classList.remove('hidden');
+
+    // Load weather async
+    const weatherData = await Weather.fetchPointWeather(lat, lon);
+    const weatherHTML = Weather.buildWeatherHTML(weatherData);
+    const wxEl = document.getElementById('info-weather-loading');
+    if (wxEl) wxEl.innerHTML = weatherHTML;
+  },
+
+  getNearbyStats(lat, lon) {
+    const radius = 20;
+    const result = { campsites: 0, fuel: 0, water: 0, shops: 0, toilets: 0 };
+    const data = DataLoader.cache;
+
+    const check = (features, type) => {
+      if (!features) return;
+      for (const f of features) {
+        const [fLon, fLat] = f.geometry.coordinates;
+        if (Utils.distance(lat, lon, fLat, fLon) <= radius) result[type]++;
+      }
+    };
+
+    check(data.docCampsites?.features, 'campsites');
+    check(data.osmCampsites?.features, 'campsites');
+
+    if (data.osmAmenities?.features) {
+      for (const f of data.osmAmenities.features) {
+        const [fLon, fLat] = f.geometry.coordinates;
+        if (Utils.distance(lat, lon, fLat, fLon) > radius) continue;
+        const sub = f.properties.subtype;
+        if (sub === 'fuel') result.fuel++;
+        else if (sub === 'water') result.water++;
+        else if (sub === 'shop') result.shops++;
+        else if (sub === 'toilet') result.toilets++;
+      }
+    }
+    return result;
   },
 
   findCellCoverage(lat, lon) {

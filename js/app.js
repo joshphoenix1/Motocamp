@@ -14,7 +14,8 @@
   });
 
   // Add base tile layer immediately so the map shows
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Store reference so Layers.setupBasemapSelector can remove it specifically
+  window._initialTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19
   }).addTo(map);
