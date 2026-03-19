@@ -151,12 +151,36 @@ const RoutePlanner = {
       }
     });
 
-    const allPoints = [start, ...waypoints, end];
+    let allPoints = [start, ...waypoints, end];
 
     // Clear previous route
     this.clearRouteDisplay();
 
     const gravelBias = document.getElementById('gravel-bias')?.checked;
+
+    // Inject gravel road waypoints if gravel mode is on
+    if (gravelBias && typeof GravelRoads !== 'undefined') {
+      const gravelWPs = GravelRoads.getGravelWaypoints(
+        start.lat, start.lng, end.lat, end.lng
+      );
+      if (gravelWPs.length > 0) {
+        console.log(`Gravel mode: injecting ${gravelWPs.length} waypoints:`,
+          gravelWPs.map(w => w.name).join(', '));
+
+        // Insert gravel waypoints between start and end, respecting user waypoints
+        const gravelLatLngs = gravelWPs.map(w => L.latLng(w.lat, w.lon));
+        allPoints = [start, ...waypoints, ...gravelLatLngs, end];
+
+        // Re-sort all middle points by distance from start
+        const middle = allPoints.slice(1, -1);
+        middle.sort((a, b) => {
+          const da = start.distanceTo(a);
+          const db = start.distanceTo(b);
+          return da - db;
+        });
+        allPoints = [start, ...middle, end];
+      }
+    }
 
     // Use OSRM for routing
     try {
@@ -164,7 +188,7 @@ const RoutePlanner = {
         waypoints: allPoints,
         router: L.Routing.osrmv1({
           serviceUrl: 'https://router.project-osrm.org/route/v1',
-          profile: gravelBias ? 'car' : 'car',
+          profile: 'car',
           useHints: false
         }),
         routeWhileDragging: false,
