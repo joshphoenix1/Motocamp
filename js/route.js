@@ -4,6 +4,7 @@ const RoutePlanner = {
   routeControl: null,
   routeMarkers: [],
   routeLine: null,
+  gravelOverlays: [],
 
   init(map) {
     this.map = map;
@@ -244,6 +245,13 @@ const RoutePlanner = {
       this.routeControl.on('routesfound', async (e) => {
         const route = e.routes[0];
         const altRoutes = e.routes.slice(1);
+
+        // Highlight gravel segments
+        this.clearGravelOverlays();
+        if (typeof GravelRoads !== 'undefined' && route.coordinates) {
+          this.highlightGravelSegments(route.coordinates);
+        }
+
         await this.generateRouteSummary(route, allPoints, altRoutes);
       });
 
@@ -264,6 +272,8 @@ const RoutePlanner = {
     const totalKm = (route.summary.totalDistance / 1000).toFixed(0);
     const totalHours = (route.summary.totalTime / 3600);
 
+    const gravelActive = document.getElementById('gravel-bias')?.checked;
+
     let html = `
       <div class="route-overview">
         <div class="route-stat">
@@ -276,6 +286,14 @@ const RoutePlanner = {
         </div>
       </div>
     `;
+
+    // Route color legend
+    if (gravelActive) {
+      html += `<div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;font-size:0.75rem;color:var(--text-secondary)">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:20px;height:3px;background:#ff1744;display:inline-block;border-radius:2px"></span> Sealed</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:20px;height:0;border-top:3px dashed #D2691E;display:inline-block"></span> Gravel</span>
+      </div>`;
+    }
 
     // Show alternate routes if available
     if (altRoutes && altRoutes.length > 0) {
@@ -421,6 +439,61 @@ const RoutePlanner = {
     }
     this.routeMarkers.forEach(m => this.map.removeLayer(m));
     this.routeMarkers = [];
+    this.clearGravelOverlays();
+  },
+
+  // Classify route coordinates as gravel or sealed
+  classifyRouteSegments(routeCoords) {
+    const THRESHOLD_KM = 0.5;
+    const allGravelPts = GravelRoads.roads.flatMap(r => r.points);
+
+    const classified = routeCoords.map(coord => {
+      const isGravel = allGravelPts.some(([lat, lon]) =>
+        Utils.distance(coord.lat, coord.lng, lat, lon) < THRESHOLD_KM
+      );
+      return { coord, isGravel };
+    });
+
+    // Group into contiguous segments
+    const segments = [];
+    let current = { isGravel: classified[0].isGravel, coords: [classified[0].coord] };
+
+    for (let i = 1; i < classified.length; i++) {
+      if (classified[i].isGravel === current.isGravel) {
+        current.coords.push(classified[i].coord);
+      } else {
+        current.coords.push(classified[i].coord); // overlap for continuity
+        segments.push(current);
+        current = { isGravel: classified[i].isGravel, coords: [classified[i].coord] };
+      }
+    }
+    segments.push(current);
+    return segments;
+  },
+
+  // Draw gravel segments in brown/orange over the route
+  highlightGravelSegments(routeCoords) {
+    const segments = this.classifyRouteSegments(routeCoords);
+
+    for (const seg of segments) {
+      if (seg.isGravel && seg.coords.length >= 2) {
+        const overlay = L.polyline(seg.coords, {
+          color: '#D2691E',
+          weight: 6,
+          opacity: 0.9,
+          dashArray: '8, 4',
+          interactive: false
+        }).addTo(this.map);
+        this.gravelOverlays.push(overlay);
+      }
+    }
+  },
+
+  clearGravelOverlays() {
+    if (this.gravelOverlays) {
+      this.gravelOverlays.forEach(layer => this.map.removeLayer(layer));
+      this.gravelOverlays = [];
+    }
   },
 
   clearRoute() {
