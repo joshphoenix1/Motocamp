@@ -386,6 +386,10 @@ const Layers = {
       })
     };
 
+    // Remove the initial base layer added in app.js, replace with managed one
+    this.map.eachLayer(layer => {
+      if (layer instanceof L.TileLayer) this.map.removeLayer(layer);
+    });
     let activeBasemap = basemaps.streets;
     this.map.addLayer(activeBasemap);
 

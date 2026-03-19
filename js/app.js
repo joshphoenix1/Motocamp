@@ -13,29 +13,35 @@
     maxBoundsViscosity: 0.8
   });
 
+  // Add base tile layer immediately so the map shows
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
   // ===== Load Data =====
   const loadingScreen = document.getElementById('loading-screen');
 
-  try {
-    const data = await DataLoader.loadAll((progress, label) => {
-      console.log(`Loading: ${label} (${Math.round(progress * 100)}%)`);
-    });
-
-    // Initialize layers
-    Layers.init(map, data);
-
-    // Initialize route planner
-    RoutePlanner.init(map);
-
-  } catch (e) {
-    console.error('Failed to initialize:', e);
-  }
-
-  // Hide loading screen
+  // Show the map right away, load data in background
   setTimeout(() => {
     loadingScreen.classList.add('fade-out');
     setTimeout(() => loadingScreen.style.display = 'none', 500);
-  }, 800);
+  }, 1500);
+
+  // Initialize route planner immediately (doesn't need data)
+  RoutePlanner.init(map);
+
+  // Load data asynchronously
+  DataLoader.loadAll((progress, label) => {
+    console.log(`Loading: ${label} (${Math.round(progress * 100)}%)`);
+  }).then(data => {
+    console.log('All data loaded, initializing layers...');
+    Layers.init(map, data);
+  }).catch(e => {
+    console.error('Failed to load data:', e);
+    // Still init layers with whatever we have
+    Layers.init(map, DataLoader.cache);
+  });
 
   // ===== Search =====
   const searchInput = document.getElementById('search-input');
