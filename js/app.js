@@ -410,5 +410,8 @@
     map.invalidateSize();
   });
 
+  // ===== Health Check =====
+  HealthCheck.start(map);
+
   console.log('MotoCamp NZ initialized successfully!');
 })();
