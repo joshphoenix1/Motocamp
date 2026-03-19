@@ -161,32 +161,11 @@ const Layers = {
   },
 
   createCellTowerLayers(data) {
-    const clusterOpts = {
-      maxClusterRadius: 50,
-      disableClusteringAtZoom: 12,
-      spiderfyOnMaxZoom: false,
-      showCoverageOnHover: false,
-      chunkedLoading: true,
-      iconCreateFunction: (cluster) => {
-        const count = cluster.getChildCount();
-        return L.divIcon({
-          html: `<div>${count}</div>`,
-          className: 'marker-cluster marker-cluster-cell',
-          iconSize: [28, 28]
-        });
-      }
-    };
-
-    const carrierGroups = {
-      'cell-spark': L.markerClusterGroup(clusterOpts),
-      'cell-vodafone': L.markerClusterGroup(clusterOpts),
-      'cell-2degrees': L.markerClusterGroup(clusterOpts),
-    };
-
-    const carrierColors = {
-      'Spark': '#ffe600',
-      'One NZ': '#e60000',
-      '2degrees': '#00aaff'
+    // Build heatmap data arrays per carrier
+    const heatData = {
+      'cell-spark': [],
+      'cell-vodafone': [],
+      'cell-2degrees': [],
     };
 
     if (data.cellTowers?.features) {
@@ -194,39 +173,38 @@ const Layers = {
         const [lon, lat] = f.geometry.coordinates;
         const props = f.properties;
 
-        const circleColor = carrierColors[props.carrier] || '#888';
-        const radius = props.range || 5000;
-
-        // Use circleMarker for performance (renders as SVG, not DOM)
-        const marker = L.circleMarker([lat, lon], {
-          radius: 4,
-          color: circleColor,
-          fillColor: circleColor,
-          fillOpacity: 0.7,
-          weight: 1,
-          opacity: 0.9
-        });
-
-        marker.bindPopup(`
-          <div style="min-width:120px">
-            <strong>${props.carrier}</strong><br>
-            <span style="font-size:0.85em">${props.technology}</span><br>
-            <span style="color:var(--text-muted);font-size:0.8em">Range: ~${(radius / 1000).toFixed(1)}km</span>
-          </div>
-        `);
+        // Intensity based on technology (newer = stronger signal area)
+        const intensity = props.technology === '4G' ? 0.8 :
+                          props.technology === '3G' ? 0.5 :
+                          props.technology === '5G' ? 1.0 : 0.3;
 
         const key = props.carrier === 'Spark' ? 'cell-spark' :
                     props.carrier === 'One NZ' ? 'cell-vodafone' : 'cell-2degrees';
 
-        if (carrierGroups[key]) {
-          carrierGroups[key].addLayer(marker);
+        if (heatData[key]) {
+          heatData[key].push([lat, lon, intensity]);
         }
       }
     }
 
-    for (const [key, group] of Object.entries(carrierGroups)) {
-      this.groups[key] = group;
-      this.map.addLayer(group);
+    // Carrier-specific color gradients
+    const gradients = {
+      'cell-spark': { 0.2: '#fff7cc', 0.4: '#ffee66', 0.6: '#ffe600', 0.8: '#ccb800', 1.0: '#998a00' },
+      'cell-vodafone': { 0.2: '#ffcccc', 0.4: '#ff6666', 0.6: '#e60000', 0.8: '#b30000', 1.0: '#800000' },
+      'cell-2degrees': { 0.2: '#ccedff', 0.4: '#66ccff', 0.6: '#00aaff', 0.8: '#0088cc', 1.0: '#006699' },
+    };
+
+    for (const [key, points] of Object.entries(heatData)) {
+      const heat = L.heatLayer(points, {
+        radius: 25,
+        blur: 20,
+        maxZoom: 12,
+        max: 1.0,
+        minOpacity: 0.15,
+        gradient: gradients[key]
+      });
+      this.groups[key] = heat;
+      this.map.addLayer(heat);
     }
   },
 
