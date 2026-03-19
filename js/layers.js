@@ -161,10 +161,32 @@ const Layers = {
   },
 
   createCellTowerLayers(data) {
+    const clusterOpts = {
+      maxClusterRadius: 50,
+      disableClusteringAtZoom: 12,
+      spiderfyOnMaxZoom: false,
+      showCoverageOnHover: false,
+      chunkedLoading: true,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `<div>${count}</div>`,
+          className: 'marker-cluster marker-cluster-cell',
+          iconSize: [28, 28]
+        });
+      }
+    };
+
     const carrierGroups = {
-      'cell-spark': L.layerGroup(),
-      'cell-vodafone': L.layerGroup(),
-      'cell-2degrees': L.layerGroup(),
+      'cell-spark': L.markerClusterGroup(clusterOpts),
+      'cell-vodafone': L.markerClusterGroup(clusterOpts),
+      'cell-2degrees': L.markerClusterGroup(clusterOpts),
+    };
+
+    const carrierColors = {
+      'Spark': '#ffe600',
+      'One NZ': '#e60000',
+      '2degrees': '#00aaff'
     };
 
     if (data.cellTowers?.features) {
@@ -172,44 +194,39 @@ const Layers = {
         const [lon, lat] = f.geometry.coordinates;
         const props = f.properties;
 
-        const marker = L.marker([lat, lon], {
-          icon: Utils.createTowerMarker(props.carrier)
+        const circleColor = carrierColors[props.carrier] || '#888';
+        const radius = props.range || 5000;
+
+        // Use circleMarker for performance (renders as SVG, not DOM)
+        const marker = L.circleMarker([lat, lon], {
+          radius: 4,
+          color: circleColor,
+          fillColor: circleColor,
+          fillOpacity: 0.7,
+          weight: 1,
+          opacity: 0.9
         });
 
         marker.bindPopup(`
           <div style="min-width:120px">
             <strong>${props.carrier}</strong><br>
             <span style="font-size:0.85em">${props.technology}</span><br>
-            <span style="color:var(--text-muted);font-size:0.8em">${props.location}</span>
+            <span style="color:var(--text-muted);font-size:0.8em">Range: ~${(radius / 1000).toFixed(1)}km</span>
           </div>
         `);
 
-        // Also draw approximate coverage circle
-        const radius = props.technology === '5G' ? 1500 :
-                       props.technology === '4G' ? 5000 : 8000;
-
-        const circleColor = props.carrier === 'Spark' ? '#ffe600' :
-                           props.carrier === 'Vodafone' ? '#e60000' : '#00aaff';
-
-        const circle = L.circle([lat, lon], {
-          radius: radius,
-          color: circleColor,
-          fillColor: circleColor,
-          fillOpacity: 0.05,
-          weight: 0.5,
-          opacity: 0.3
-        });
-
         const key = props.carrier === 'Spark' ? 'cell-spark' :
-                    props.carrier === 'Vodafone' ? 'cell-vodafone' : 'cell-2degrees';
+                    props.carrier === 'One NZ' ? 'cell-vodafone' : 'cell-2degrees';
 
-        carrierGroups[key].addLayer(marker);
-        carrierGroups[key].addLayer(circle);
+        if (carrierGroups[key]) {
+          carrierGroups[key].addLayer(marker);
+        }
       }
     }
 
     for (const [key, group] of Object.entries(carrierGroups)) {
       this.groups[key] = group;
+      this.map.addLayer(group);
     }
   },
 
@@ -579,7 +596,7 @@ const Layers = {
       const dist = Utils.distance(lat, lon, tLat, tLon);
 
       const carrier = f.properties.carrier;
-      const key = carrier === 'Spark' ? 'spark' : carrier === 'Vodafone' ? 'vodafone' : 'twodeg';
+      const key = carrier === 'Spark' ? 'spark' : carrier === 'One NZ' ? 'vodafone' : 'twodeg';
 
       if (dist < result[key].dist) {
         result[key].dist = dist;

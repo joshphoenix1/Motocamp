@@ -15,13 +15,6 @@ const RoutePlanner = {
     document.getElementById('clear-route').addEventListener('click', () => this.clearRoute());
     document.getElementById('plan-route').addEventListener('click', () => this.planRoute());
 
-    // Set default dates
-    const today = new Date();
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    document.getElementById('route-date-start').value = today.toISOString().split('T')[0];
-    document.getElementById('route-date-end').value = nextWeek.toISOString().split('T')[0];
-
     // Route input geocoding
     this.setupInputGeocoding('route-start');
     this.setupInputGeocoding('route-end');
@@ -163,19 +156,30 @@ const RoutePlanner = {
     // Clear previous route
     this.clearRouteDisplay();
 
+    const gravelBias = document.getElementById('gravel-bias')?.checked;
+
     // Use OSRM for routing
     try {
       this.routeControl = L.Routing.control({
         waypoints: allPoints,
         router: L.Routing.osrmv1({
           serviceUrl: 'https://router.project-osrm.org/route/v1',
-          profile: 'car'
+          profile: gravelBias ? 'car' : 'car',
+          useHints: false
         }),
+        routeWhileDragging: false,
+        alternatives: true,
         lineOptions: {
           styles: [
             { color: '#00c853', opacity: 0.8, weight: 5 },
             { color: '#00e676', opacity: 0.4, weight: 9 }
-          ]
+          ],
+          altLineOptions: {
+            styles: [
+              { color: '#ff9800', opacity: 0.6, weight: 4, dashArray: '8, 6' },
+              { color: '#ffb74d', opacity: 0.3, weight: 8, dashArray: '8, 6' }
+            ]
+          }
         },
         show: false,
         addWaypoints: false,
@@ -199,7 +203,8 @@ const RoutePlanner = {
 
       this.routeControl.on('routesfound', async (e) => {
         const route = e.routes[0];
-        await this.generateRouteSummary(route, allPoints);
+        const altRoutes = e.routes.slice(1);
+        await this.generateRouteSummary(route, allPoints, altRoutes);
       });
 
     } catch (e) {
@@ -212,16 +217,12 @@ const RoutePlanner = {
     }
   },
 
-  async generateRouteSummary(route, points) {
+  async generateRouteSummary(route, points, altRoutes) {
     const summary = document.getElementById('route-summary');
     const content = document.getElementById('route-summary-content');
-    const startDate = document.getElementById('route-date-start').value;
-    const endDate = document.getElementById('route-date-end').value;
 
     const totalKm = (route.summary.totalDistance / 1000).toFixed(0);
     const totalHours = (route.summary.totalTime / 3600);
-    const days = startDate && endDate ?
-      Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000)) : 1;
 
     let html = `
       <div class="route-overview">
@@ -233,12 +234,25 @@ const RoutePlanner = {
           <div class="route-stat-value">${Utils.formatDuration(totalHours)}</div>
           <div class="route-stat-label">Drive Time</div>
         </div>
-        <div class="route-stat">
-          <div class="route-stat-value">${days}d</div>
-          <div class="route-stat-label">Trip Duration</div>
-        </div>
       </div>
     `;
+
+    // Show alternate routes if available
+    if (altRoutes && altRoutes.length > 0) {
+      html += '<div style="margin-bottom:12px"><h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-code-branch" style="color:#ff9800"></i> Alternate Routes</h4>';
+      for (let a = 0; a < altRoutes.length; a++) {
+        const alt = altRoutes[a];
+        const altKm = (alt.summary.totalDistance / 1000).toFixed(0);
+        const altHours = (alt.summary.totalTime / 3600);
+        const diff = altKm - totalKm;
+        html += `<div style="display:flex;gap:12px;align-items:center;padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);margin-bottom:4px;font-size:0.8rem;border-left:3px solid #ff9800">
+          <span style="font-weight:600">${altKm}km</span>
+          <span>${Utils.formatDuration(altHours)}</span>
+          <span style="color:var(--text-muted)">${diff > 0 ? '+' : ''}${diff}km</span>
+        </div>`;
+      }
+      html += '</div>';
+    }
 
     // Fetch weather for each point
     html += '<div class="route-segments">';
@@ -300,8 +314,28 @@ const RoutePlanner = {
 
     html += '</div>';
 
+    // Send to Google Maps button
+    const gmapsUrl = this.buildGoogleMapsURL(points);
+    html += `
+      <div style="margin-top:12px">
+        <a href="${gmapsUrl}" target="_blank" class="btn btn-primary btn-block" style="text-align:center">
+          <i class="fab fa-google"></i> Open in Google Maps
+        </a>
+      </div>
+    `;
+
     content.innerHTML = html;
     summary.classList.remove('hidden');
+  },
+
+  buildGoogleMapsURL(points) {
+    if (points.length < 2) return '#';
+    const origin = `${points[0].lat},${points[0].lng}`;
+    const dest = `${points[points.length - 1].lat},${points[points.length - 1].lng}`;
+    const waypoints = points.slice(1, -1).map(p => `${p.lat},${p.lng}`).join('|');
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`;
+    if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`;
+    return url;
   },
 
   findNearbyServices(latlng, radiusKm) {

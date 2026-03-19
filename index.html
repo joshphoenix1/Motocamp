@@ -121,19 +121,19 @@
         <div class="sidebar-section">
           <h3><i class="fas fa-signal"></i> Cell Coverage</h3>
           <label class="layer-toggle">
-            <input type="checkbox" data-layer="cell-spark" />
+            <input type="checkbox" data-layer="cell-spark" checked />
             <span class="toggle-slider"></span>
             <span class="toggle-label">Spark</span>
             <span class="badge badge-yellow">4G/5G</span>
           </label>
           <label class="layer-toggle">
-            <input type="checkbox" data-layer="cell-vodafone" />
+            <input type="checkbox" data-layer="cell-vodafone" checked />
             <span class="toggle-slider"></span>
             <span class="toggle-label">One NZ (Vodafone)</span>
             <span class="badge badge-red">4G/5G</span>
           </label>
           <label class="layer-toggle">
-            <input type="checkbox" data-layer="cell-2degrees" />
+            <input type="checkbox" data-layer="cell-2degrees" checked />
             <span class="toggle-slider"></span>
             <span class="toggle-label">2degrees</span>
             <span class="badge badge-blue">4G</span>
@@ -197,18 +197,13 @@
             <button id="clear-route" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Clear</button>
           </div>
 
-          <div class="route-dates">
-            <h4>Travel Dates</h4>
-            <div class="date-inputs">
-              <div class="date-field">
-                <label>Depart</label>
-                <input type="date" id="route-date-start" />
-              </div>
-              <div class="date-field">
-                <label>Arrive</label>
-                <input type="date" id="route-date-end" />
-              </div>
-            </div>
+          <div class="route-options">
+            <label class="layer-toggle">
+              <input type="checkbox" id="gravel-bias" />
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Prefer Gravel Roads</span>
+              <span class="badge badge-orange">Adventure</span>
+            </label>
           </div>
 
           <button id="plan-route" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Plan Route</button>
