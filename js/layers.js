@@ -199,9 +199,9 @@ const Layers = {
 
     for (const [key, points] of Object.entries(heatData)) {
       const heat = L.heatLayer(points, {
-        radius: 35,
-        blur: 30,
-        maxZoom: 11,
+        radius: 50,
+        blur: 40,
+        maxZoom: 13,
         max: 1.0,
         minOpacity: 0.02,
         gradient: gradients[key]
