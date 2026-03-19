@@ -375,6 +375,12 @@ body {
 .map-btn:hover { background: var(--bg-tertiary); color: var(--accent); }
 .map-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+/* ===== Weather Tile Overlays ===== */
+.weather-tile-temperature { filter: saturate(2.5) contrast(1.8) brightness(1.1); }
+.weather-tile-precipitation { filter: saturate(2.0) contrast(1.5); }
+.weather-tile-clouds { filter: contrast(1.4) brightness(0.95); }
+.weather-tile-wind { filter: saturate(1.8) contrast(1.4); }
+
 /* ===== Weather Timeline ===== */
 #weather-timeline {
   position: fixed;

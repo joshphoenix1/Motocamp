@@ -130,10 +130,11 @@ const Weather = {
       this.activeTileLayer = L.tileLayer(
         `https://tile.openweathermap.org/map/${owmLayer}/{z}/{x}/{y}.png?appid=${this.OWM_KEY}`,
         {
-          opacity: type === 'temperature' ? 0.85 : type === 'precipitation' ? 0.75 : type === 'clouds' ? 0.65 : 0.6,
+          opacity: 1.0,
           maxZoom: 18,
           zIndex: 400,
-          attribution: '&copy; OpenWeatherMap'
+          attribution: '&copy; OpenWeatherMap',
+          className: `weather-tile-${type}`
         }
       );
       map.addLayer(this.activeTileLayer);
