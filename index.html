@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css?v=20260320" />
+  <link rel="stylesheet" href="css/style.css?v=20260320b" />
 </head>
 <body>
   <!-- Loading Screen -->
@@ -299,56 +299,28 @@
   <div id="dashboard-overlay" class="hidden">
     <button id="dashboard-close" class="dash-close-btn"><i class="fas fa-times"></i></button>
 
-    <div class="dash-grid">
-      <!-- Speedometer -->
-      <div class="dash-card dash-speedo">
-        <div class="dash-gauge">
-          <div class="dash-gauge-ring" id="dash-speed-arc"></div>
-          <div class="dash-gauge-ticks">
-            <span class="dash-tick" style="--angle:-135deg"><small>0</small></span>
-            <span class="dash-tick" style="--angle:-108deg"><small>20</small></span>
-            <span class="dash-tick" style="--angle:-81deg"><small>40</small></span>
-            <span class="dash-tick" style="--angle:-54deg"><small>60</small></span>
-            <span class="dash-tick" style="--angle:-27deg"><small>80</small></span>
-            <span class="dash-tick" style="--angle:0deg"><small>100</small></span>
-            <span class="dash-tick" style="--angle:27deg"><small>120</small></span>
-            <span class="dash-tick" style="--angle:54deg"><small>140</small></span>
-            <span class="dash-tick" style="--angle:81deg"><small>160</small></span>
-            <span class="dash-tick" style="--angle:108deg"><small>180</small></span>
-            <span class="dash-tick" style="--angle:135deg"><small>200</small></span>
-          </div>
-          <div class="dash-needle" id="dash-speed-needle"></div>
-          <div class="dash-gauge-center">
-            <span class="dash-speed-num" id="dash-speed-value">0</span>
-            <span class="dash-speed-unit">km/h</span>
-          </div>
+    <div class="dash-layout">
+      <!-- Speed: dominant element -->
+      <div class="dash-speed-zone">
+        <span class="dash-speed-num" id="dash-speed-value">0</span>
+        <span class="dash-speed-unit">km/h</span>
+        <div class="dash-speed-max">max <span id="dash-max-speed">0</span></div>
+      </div>
+
+      <!-- Info bar: altitude + heading -->
+      <div class="dash-info-bar">
+        <div class="dash-info-item">
+          <i class="fas fa-mountain"></i>
+          <span id="dash-altitude-value">--</span><span class="dash-info-unit">m</span>
         </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Max</span>
-          <span class="dash-stat-val"><span id="dash-max-speed">0</span> km/h</span>
+        <div class="dash-info-item">
+          <i class="fas fa-compass"></i>
+          <span id="dash-heading-value">--</span>
         </div>
       </div>
 
-      <!-- Altitude + Chart -->
-      <div class="dash-card dash-altitude">
-        <div class="dash-card-header">
-          <i class="fas fa-mountain"></i> Altitude
-        </div>
-        <div class="dash-big-value">
-          <span id="dash-altitude-value">--</span><span class="dash-big-unit">m</span>
-        </div>
-        <canvas id="dash-altitude-chart" class="dash-alt-chart"></canvas>
-        <div class="dash-card-header" style="margin-top:12px">
-          <i class="fas fa-compass"></i> Heading
-        </div>
-        <div class="dash-heading-val" id="dash-heading-value">--</div>
-      </div>
-
-      <!-- G-Force Meter -->
-      <div class="dash-card dash-gforce">
-        <div class="dash-card-header">
-          <i class="fas fa-crosshairs"></i> G-Force
-        </div>
+      <!-- G-Force: bottom quarter -->
+      <div class="dash-gforce-zone">
         <div class="dash-gforce-grid">
           <div class="dash-gforce-ring ring-2g"></div>
           <div class="dash-gforce-ring ring-1g"></div>
@@ -356,18 +328,14 @@
           <div class="dash-gforce-crosshair-h"></div>
           <div class="dash-gforce-crosshair-v"></div>
           <div class="dash-gforce-dot" id="dash-gforce-dot"></div>
-          <span class="dash-gforce-label" style="top:4px;left:50%;transform:translateX(-50%)">Brake</span>
-          <span class="dash-gforce-label" style="bottom:4px;left:50%;transform:translateX(-50%)">Accel</span>
-          <span class="dash-gforce-label" style="left:4px;top:50%;transform:translateY(-50%)">L</span>
-          <span class="dash-gforce-label" style="right:4px;top:50%;transform:translateY(-50%)">R</span>
+          <span class="dash-gforce-label" style="top:2px;left:50%;transform:translateX(-50%)">Brake</span>
+          <span class="dash-gforce-label" style="bottom:2px;left:50%;transform:translateX(-50%)">Accel</span>
+          <span class="dash-gforce-label" style="left:2px;top:50%;transform:translateY(-50%)">L</span>
+          <span class="dash-gforce-label" style="right:2px;top:50%;transform:translateY(-50%)">R</span>
         </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Current</span>
-          <span class="dash-stat-val"><span id="dash-gforce-value">0.0</span>g</span>
-        </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Max</span>
-          <span class="dash-stat-val"><span id="dash-max-gforce">0.0</span>g</span>
+        <div class="dash-gforce-stats">
+          <div><span class="dash-gforce-num" id="dash-gforce-value">0.0</span><span class="dash-info-unit">g</span></div>
+          <div class="dash-gforce-max">max <span id="dash-max-gforce">0.0</span>g</div>
         </div>
       </div>
     </div>
@@ -378,14 +346,14 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <script src="js/health.js?v=20260320"></script>
-  <script src="js/utils.js?v=20260320"></script>
-  <script src="js/data-loader.js?v=20260320"></script>
-  <script src="js/weather.js?v=20260320"></script>
-  <script src="js/layers.js?v=20260320"></script>
-  <script src="js/gravel-roads.js?v=20260320"></script>
-  <script src="js/route.js?v=20260320"></script>
-  <script src="js/dashboard.js?v=20260320"></script>
-  <script src="js/app.js?v=20260320"></script>
+  <script src="js/health.js?v=20260320b"></script>
+  <script src="js/utils.js?v=20260320b"></script>
+  <script src="js/data-loader.js?v=20260320b"></script>
+  <script src="js/weather.js?v=20260320b"></script>
+  <script src="js/layers.js?v=20260320b"></script>
+  <script src="js/gravel-roads.js?v=20260320b"></script>
+  <script src="js/route.js?v=20260320b"></script>
+  <script src="js/dashboard.js?v=20260320b"></script>
+  <script src="js/app.js?v=20260320b"></script>
 </body>
 </html>

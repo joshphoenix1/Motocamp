@@ -159,7 +159,6 @@
     const hdg = heading !== null ? Math.round(heading) : null;
 
     updateDisplay(speedKmh, alt, gForceX, gForceY, hdg);
-    drawAltitudeChart();
   }
 
   function onGeoError(err) {
@@ -183,38 +182,15 @@
   }
 
   function updateDisplay(speedKmh, altitude, gx, gy, heading) {
-    // Speed
+    // Speed — just the number
     const speedVal = document.getElementById('dash-speed-value');
-    const speedNeedle = document.getElementById('dash-speed-needle');
     const maxSpeedEl = document.getElementById('dash-max-speed');
-
-    const displaySpeed = Math.round(speedKmh);
-    speedVal.textContent = displaySpeed;
-    maxSpeedEl.textContent = Math.round(maxSpeed);
-
-    // Needle rotation: 0 km/h = -135deg, 200 km/h = 135deg
-    const maxGaugeSpeed = 200;
-    const ratio = Math.min(speedKmh / maxGaugeSpeed, 1);
-    const angle = -135 + (ratio * 270);
-    speedNeedle.style.transform = `rotate(${angle}deg)`;
-
-    // Speed arc color
-    const speedArc = document.getElementById('dash-speed-arc');
-    if (speedArc) {
-      const pct = ratio * 100;
-      speedArc.style.background = `conic-gradient(
-        from 202.5deg,
-        var(--accent) 0%,
-        ${pct > 60 ? '#ff9800' : 'var(--accent)'} ${pct * 0.75}%,
-        ${pct > 80 ? '#ff5252' : pct > 60 ? '#ff9800' : 'var(--accent)'} ${pct * 0.75}%,
-        transparent ${pct * 0.75}%,
-        transparent 75%
-      )`;
-    }
+    if (speedVal) speedVal.textContent = Math.round(speedKmh);
+    if (maxSpeedEl) maxSpeedEl.textContent = Math.round(maxSpeed);
 
     // Altitude
     const altEl = document.getElementById('dash-altitude-value');
-    altEl.textContent = altitude !== null ? altitude : '--';
+    if (altEl) altEl.textContent = altitude !== null ? altitude : '--';
 
     // Heading / compass
     const headingEl = document.getElementById('dash-heading-value');
@@ -259,51 +235,6 @@
       dot.style.background = 'var(--accent)';
       dot.style.boxShadow = '0 0 12px rgba(0,200,83,0.6)';
     }
-  }
-
-  function drawAltitudeChart() {
-    const canvas = document.getElementById('dash-altitude-chart');
-    if (!canvas || altitudeHistory.length < 2) return;
-
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width = canvas.offsetWidth * 2;
-    const h = canvas.height = canvas.offsetHeight * 2;
-    ctx.scale(2, 2);
-    const dw = canvas.offsetWidth;
-    const dh = canvas.offsetHeight;
-
-    ctx.clearRect(0, 0, dw, dh);
-
-    const pts = altitudeHistory;
-    const min = Math.min(...pts) - 10;
-    const max = Math.max(...pts) + 10;
-    const range = max - min || 1;
-
-    // Draw fill
-    ctx.beginPath();
-    ctx.moveTo(0, dh);
-    pts.forEach((p, i) => {
-      const x = (i / (MAX_ALT_POINTS - 1)) * dw;
-      const y = dh - ((p - min) / range) * (dh - 4);
-      if (i === 0) ctx.lineTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.lineTo(((pts.length - 1) / (MAX_ALT_POINTS - 1)) * dw, dh);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(0,200,83,0.15)';
-    ctx.fill();
-
-    // Draw line
-    ctx.beginPath();
-    pts.forEach((p, i) => {
-      const x = (i / (MAX_ALT_POINTS - 1)) * dw;
-      const y = dh - ((p - min) / range) * (dh - 4);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = '#00c853';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
   }
 
   // Initialize when DOM is ready
