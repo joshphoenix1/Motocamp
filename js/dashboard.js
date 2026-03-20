@@ -15,80 +15,101 @@
   const MAX_ALT_POINTS = 120;
 
   function initDashboard() {
-    const overlay = document.getElementById('dashboard-overlay');
     const btn = document.getElementById('btn-dashboard');
+    const mobileBtn = document.getElementById('mobile-dashboard');
     const closeBtn = document.getElementById('dashboard-close');
 
-    btn.addEventListener('click', openDashboard);
-    closeBtn.addEventListener('click', closeDashboard);
+    if (btn) btn.addEventListener('click', openDashboard);
+    if (mobileBtn) mobileBtn.addEventListener('click', openDashboard);
+    if (closeBtn) closeBtn.addEventListener('click', closeDashboard);
   }
 
   function openDashboard() {
-    const overlay = document.getElementById('dashboard-overlay');
-    overlay.classList.remove('hidden');
-    overlay.style.display = 'flex';
-    document.getElementById('btn-dashboard').classList.add('active');
+    try {
+      const overlay = document.getElementById('dashboard-overlay');
+      overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
 
-    // Hide everything else — this is a full takeover
-    document.body.classList.add('dashboard-active');
+      const btn = document.getElementById('btn-dashboard');
+      if (btn) btn.classList.add('active');
 
-    // Request wake lock to keep screen on
-    requestWakeLock();
+      // Hide everything else — this is a full takeover
+      document.body.classList.add('dashboard-active');
 
-    // Force fullscreen for better riding experience
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      // Request wake lock to keep screen on
+      requestWakeLock();
+
+      // Try fullscreen (may not work on iOS)
+      try {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          el.requestFullscreen().catch(() => {});
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        }
+      } catch (e) { /* ignore */ }
+
+      // Start GPS tracking
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 10000
+        });
+      }
+
+      // Start accelerometer for g-force
+      if (window.DeviceMotionEvent) {
+        motionListener = onDeviceMotion;
+        window.addEventListener('devicemotion', motionListener);
+      }
+
+      // Reset stats
+      maxSpeed = 0;
+      maxGForce = 0;
+      altitudeHistory = [];
+      updateDisplay(0, null, 0, 0);
+    } catch (e) {
+      console.error('Dashboard open error:', e);
     }
-
-    // Start GPS tracking
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-      });
-    }
-
-    // Start accelerometer for g-force
-    if (window.DeviceMotionEvent) {
-      motionListener = onDeviceMotion;
-      window.addEventListener('devicemotion', motionListener);
-    }
-
-    // Reset stats
-    maxSpeed = 0;
-    maxGForce = 0;
-    altitudeHistory = [];
-    updateDisplay(0, null, 0, 0);
   }
 
   function closeDashboard() {
-    const overlay = document.getElementById('dashboard-overlay');
-    overlay.classList.add('hidden');
-    overlay.style.display = '';
-    document.getElementById('btn-dashboard').classList.remove('active');
+    try {
+      const overlay = document.getElementById('dashboard-overlay');
+      overlay.classList.add('hidden');
+      overlay.style.display = 'none';
 
-    // Restore everything
-    document.body.classList.remove('dashboard-active');
+      const btn = document.getElementById('btn-dashboard');
+      if (btn) btn.classList.remove('active');
 
-    // Stop GPS
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-    }
+      // Restore everything
+      document.body.classList.remove('dashboard-active');
 
-    // Stop accelerometer
-    if (motionListener) {
-      window.removeEventListener('devicemotion', motionListener);
-      motionListener = null;
-    }
+      // Stop GPS
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
 
-    // Release wake lock
-    releaseWakeLock();
+      // Stop accelerometer
+      if (motionListener) {
+        window.removeEventListener('devicemotion', motionListener);
+        motionListener = null;
+      }
 
-    // Exit fullscreen
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
+      // Release wake lock
+      releaseWakeLock();
+
+      // Exit fullscreen
+      try {
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        if (fsEl) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      } catch (e) { /* ignore */ }
+    } catch (e) {
+      console.error('Dashboard close error:', e);
     }
   }
 
