@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css?v=20260320b" />
+  <link rel="stylesheet" href="css/style.css?v=20260320c" />
 </head>
 <body>
   <!-- Loading Screen -->
@@ -300,6 +300,12 @@
     <button id="dashboard-close" class="dash-close-btn"><i class="fas fa-times"></i></button>
 
     <div class="dash-layout">
+      <!-- GPS health indicator -->
+      <div class="dash-gps-status" id="dash-gps-status">
+        <i class="fas fa-satellite-dish"></i>
+        <span id="dash-gps-text">Waiting for GPS...</span>
+      </div>
+
       <!-- Speed: dominant element -->
       <div class="dash-speed-zone">
         <span class="dash-speed-num" id="dash-speed-value">0</span>
@@ -307,16 +313,19 @@
         <div class="dash-speed-max">max <span id="dash-max-speed">0</span></div>
       </div>
 
-      <!-- Info bar: altitude + heading -->
-      <div class="dash-info-bar">
-        <div class="dash-info-item">
-          <i class="fas fa-mountain"></i>
-          <span id="dash-altitude-value">--</span><span class="dash-info-unit">m</span>
+      <!-- Altitude section with chart -->
+      <div class="dash-altitude-zone">
+        <div class="dash-alt-header">
+          <div class="dash-alt-reading">
+            <i class="fas fa-mountain"></i>
+            <span class="dash-alt-value" id="dash-altitude-value">--</span><span class="dash-alt-unit">m</span>
+          </div>
+          <div class="dash-alt-reading">
+            <i class="fas fa-compass"></i>
+            <span id="dash-heading-value">--</span>
+          </div>
         </div>
-        <div class="dash-info-item">
-          <i class="fas fa-compass"></i>
-          <span id="dash-heading-value">--</span>
-        </div>
+        <canvas id="dash-altitude-chart" class="dash-alt-chart"></canvas>
       </div>
 
       <!-- G-Force: bottom quarter -->
@@ -346,14 +355,14 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <script src="js/health.js?v=20260320b"></script>
-  <script src="js/utils.js?v=20260320b"></script>
-  <script src="js/data-loader.js?v=20260320b"></script>
-  <script src="js/weather.js?v=20260320b"></script>
-  <script src="js/layers.js?v=20260320b"></script>
-  <script src="js/gravel-roads.js?v=20260320b"></script>
-  <script src="js/route.js?v=20260320b"></script>
-  <script src="js/dashboard.js?v=20260320b"></script>
-  <script src="js/app.js?v=20260320b"></script>
+  <script src="js/health.js?v=20260320c"></script>
+  <script src="js/utils.js?v=20260320c"></script>
+  <script src="js/data-loader.js?v=20260320c"></script>
+  <script src="js/weather.js?v=20260320c"></script>
+  <script src="js/layers.js?v=20260320c"></script>
+  <script src="js/gravel-roads.js?v=20260320c"></script>
+  <script src="js/route.js?v=20260320c"></script>
+  <script src="js/dashboard.js?v=20260320c"></script>
+  <script src="js/app.js?v=20260320c"></script>
 </body>
 </html>

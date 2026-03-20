@@ -778,6 +778,38 @@ body.dashboard-active {
   max-width: 600px;
 }
 
+/* GPS Status indicator */
+.dash-gps-status {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(26,38,50,0.8);
+  border: 1px solid var(--bg-tertiary);
+  z-index: 100001;
+}
+
+.dash-gps-status i { font-size: 0.7rem; }
+
+.gps-waiting { color: #ff9800; }
+.gps-waiting i { color: #ff9800; animation: gps-pulse 1.5s infinite; }
+.gps-active { color: var(--accent); }
+.gps-active i { color: var(--accent); }
+.gps-stale { color: #ff9800; }
+.gps-stale i { color: #ff9800; animation: gps-pulse 0.8s infinite; }
+.gps-error { color: var(--danger); }
+.gps-error i { color: var(--danger); }
+
+@keyframes gps-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 /* Speed zone — takes up most of the screen */
 .dash-speed-zone {
   flex: 1;
@@ -811,29 +843,57 @@ body.dashboard-active {
   font-variant-numeric: tabular-nums;
 }
 
-/* Info bar — altitude + heading in a compact row */
-.dash-info-bar {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  padding: 12px 0;
+/* Altitude zone — larger section with chart */
+.dash-altitude-zone {
+  flex: 0 0 auto;
+  padding: 10px 16px;
   border-top: 1px solid var(--bg-tertiary);
   border-bottom: 1px solid var(--bg-tertiary);
 }
 
-.dash-info-item {
+.dash-alt-header {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 8px;
+}
+
+.dash-alt-reading {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-variant-numeric: tabular-nums;
 }
 
-.dash-info-item i {
+.dash-alt-reading i {
   color: var(--accent);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  align-self: center;
+}
+
+.dash-alt-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.dash-alt-unit {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.dash-alt-reading #dash-heading-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.dash-alt-chart {
+  width: 100%;
+  height: 70px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.25);
 }
 
 .dash-info-unit {
@@ -926,18 +986,22 @@ body.dashboard-active {
 @media (max-height: 500px) and (orientation: landscape) {
   #dashboard-overlay { padding: 6px; }
   .dash-layout { flex-direction: row; flex-wrap: wrap; max-width: 100%; }
-  .dash-speed-zone { flex: 1 1 60%; }
+  .dash-speed-zone { flex: 1 1 50%; }
   .dash-speed-num { font-size: 20vh; }
-  .dash-info-bar {
+  .dash-altitude-zone {
     position: absolute;
-    bottom: 8px;
-    left: 8px;
+    bottom: 6px;
+    left: 6px;
     border: none;
-    gap: 20px;
     padding: 0;
-    font-size: 0.9rem;
+    background: rgba(10,14,20,0.85);
+    border-radius: 8px;
+    padding: 6px 10px;
   }
-  .dash-info-item { font-size: 1rem; }
+  .dash-alt-header { gap: 16px; margin-bottom: 4px; }
+  .dash-alt-value { font-size: 1.2rem; }
+  .dash-alt-reading #dash-heading-value { font-size: 1rem; }
+  .dash-alt-chart { height: 40px; }
   .dash-gforce-zone {
     flex: 0 0 35%;
     flex-direction: column;
@@ -947,6 +1011,7 @@ body.dashboard-active {
   .dash-gforce-stats { flex-direction: row; gap: 12px; align-items: baseline; }
   .dash-gforce-num { font-size: 1.2rem; }
   .dash-close-btn { width: 40px; height: 40px; top: 6px; right: 6px; font-size: 1rem; }
+  .dash-gps-status { top: 6px; left: 6px; font-size: 0.65rem; padding: 4px 8px; }
 }
 
 /* ===== Hidden utility ===== */
