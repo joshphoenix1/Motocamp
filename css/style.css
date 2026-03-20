@@ -719,10 +719,29 @@ body {
 .ctx-divider { height: 1px; background: var(--bg-tertiary); margin: 4px 0; }
 
 /* ===== Ride Dashboard ===== */
+
+/* When dashboard is open, hide EVERYTHING else */
+body.dashboard-active #map,
+body.dashboard-active #sidebar,
+body.dashboard-active #mobile-header,
+body.dashboard-active #map-controls,
+body.dashboard-active #weather-timeline,
+body.dashboard-active #info-panel,
+body.dashboard-active #context-menu,
+body.dashboard-active .leaflet-control-container {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+body.dashboard-active {
+  overflow: hidden;
+  background: #0a0e14;
+}
+
 #dashboard-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 99999;
   background: #0a0e14;
   display: flex;
   align-items: center;
@@ -734,18 +753,19 @@ body {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 2001;
-  width: 44px;
-  height: 44px;
+  z-index: 100000;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: 1px solid var(--bg-tertiary);
   background: rgba(26,38,50,0.8);
   color: var(--text-primary);
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .dash-close-btn:hover { color: var(--danger); }
 
@@ -968,41 +988,71 @@ body {
   letter-spacing: 1px;
 }
 
-/* Mobile: stack vertically */
+/* Mobile portrait: stack vertically, big speedo */
 @media (max-width: 768px) {
+  #dashboard-overlay { padding: 8px; }
   .dash-grid {
     grid-template-columns: 1fr;
     max-height: none;
     overflow-y: auto;
+    gap: 10px;
     padding-bottom: 40px;
+    -webkit-overflow-scrolling: touch;
   }
-  .dash-gauge { width: 220px; height: 220px; }
-  .dash-speed-num { font-size: 2.8rem; }
-  .dash-needle { height: 80px; margin-top: -80px; }
+  .dash-card { padding: 14px; border-radius: 12px; }
+  .dash-speedo { order: -1; }
+  .dash-gauge { width: 260px; height: 260px; }
+  .dash-speed-num { font-size: 3.2rem; }
+  .dash-needle { height: 95px; margin-top: -95px; }
   .dash-tick {
-    transform-origin: center -76px;
-    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-76px);
+    transform-origin: center -90px;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-90px);
   }
+  .dash-big-value { font-size: 2.6rem; }
+  .dash-gforce-grid { width: 180px; height: 180px; }
 }
 
-/* Landscape mobile: side-by-side */
+/* Mobile landscape: 3 columns, compact — primary riding orientation */
 @media (max-height: 500px) and (orientation: landscape) {
+  #dashboard-overlay { padding: 6px; }
   .dash-grid {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1.2fr 0.8fr 1fr;
+    grid-template-rows: 1fr;
     max-height: 100%;
     overflow: hidden;
+    gap: 8px;
   }
-  .dash-card { padding: 10px; }
-  .dash-gauge { width: 180px; height: 180px; }
-  .dash-speed-num { font-size: 2.2rem; }
-  .dash-needle { height: 65px; margin-top: -65px; }
+  .dash-card { padding: 8px; border-radius: 10px; }
+  .dash-card-header { font-size: 0.7rem; margin-bottom: 6px; }
+  .dash-gauge { width: 160px; height: 160px; }
+  .dash-speed-num { font-size: 2rem; }
+  .dash-speed-unit { font-size: 0.65rem; }
+  .dash-needle { height: 58px; margin-top: -58px; }
   .dash-tick {
-    height: 10px;
-    transform-origin: center -62px;
-    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-62px);
+    height: 8px;
+    transform-origin: center -56px;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-56px);
   }
-  .dash-big-value { font-size: 2rem; }
-  .dash-gforce-grid { width: 140px; height: 140px; }
+  .dash-tick small { font-size: 0.5rem; bottom: -14px; }
+  .dash-stat-row { padding: 3px 8px; font-size: 0.7rem; }
+  .dash-big-value { font-size: 1.8rem; }
+  .dash-big-unit { font-size: 0.9rem; }
+  .dash-alt-chart { height: 50px; }
+  .dash-heading-val { font-size: 1.2rem; }
+  .dash-gforce-grid { width: 120px; height: 120px; }
+  .dash-close-btn { width: 40px; height: 40px; top: 6px; right: 6px; font-size: 1rem; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .dash-gauge { width: 200px; height: 200px; }
+  .dash-speed-num { font-size: 2.4rem; }
+  .dash-needle { height: 72px; margin-top: -72px; }
+  .dash-tick {
+    transform-origin: center -68px;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-68px);
+  }
+  .dash-gforce-grid { width: 150px; height: 150px; }
 }
 
 /* ===== Hidden utility ===== */

@@ -26,7 +26,11 @@
   function openDashboard() {
     const overlay = document.getElementById('dashboard-overlay');
     overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
     document.getElementById('btn-dashboard').classList.add('active');
+
+    // Hide everything else — this is a full takeover
+    document.body.classList.add('dashboard-active');
 
     // Request wake lock to keep screen on
     requestWakeLock();
@@ -61,7 +65,11 @@
   function closeDashboard() {
     const overlay = document.getElementById('dashboard-overlay');
     overlay.classList.add('hidden');
+    overlay.style.display = '';
     document.getElementById('btn-dashboard').classList.remove('active');
+
+    // Restore everything
+    document.body.classList.remove('dashboard-active');
 
     // Stop GPS
     if (watchId !== null) {
