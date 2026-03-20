@@ -718,5 +718,292 @@ body {
 .ctx-item i { color: var(--accent); width: 16px; text-align: center; font-size: 0.85rem; }
 .ctx-divider { height: 1px; background: var(--bg-tertiary); margin: 4px 0; }
 
+/* ===== Ride Dashboard ===== */
+#dashboard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #0a0e14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.dash-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2001;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--bg-tertiary);
+  background: rgba(26,38,50,0.8);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.dash-close-btn:hover { color: var(--danger); }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 700px;
+}
+
+.dash-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-card-header {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: center;
+}
+.dash-card-header i { color: var(--accent); margin-right: 6px; }
+
+/* Speedometer gauge */
+.dash-speedo { justify-content: center; }
+
+.dash-gauge {
+  position: relative;
+  width: 260px;
+  height: 260px;
+}
+
+.dash-gauge-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 202.5deg,
+    var(--bg-tertiary) 0%,
+    var(--bg-tertiary) 75%,
+    transparent 75%
+  );
+  mask: radial-gradient(circle, transparent 55%, black 56%, black 70%, transparent 71%);
+  -webkit-mask: radial-gradient(circle, transparent 55%, black 56%, black 70%, transparent 71%);
+}
+
+.dash-gauge-ticks {
+  position: absolute;
+  inset: 0;
+}
+
+.dash-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 14px;
+  background: var(--text-secondary);
+  transform-origin: center -96px;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-96px);
+}
+
+.dash-tick small {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%) rotate(calc(var(--angle) * -1));
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dash-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 100px;
+  background: linear-gradient(to top, var(--danger), var(--danger));
+  border-radius: 2px;
+  transform-origin: bottom center;
+  transform: rotate(-135deg);
+  margin-left: -1.5px;
+  margin-top: -100px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+}
+
+.dash-needle::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.dash-gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-speed-num {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-speed-unit {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.dash-stat-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+}
+.dash-stat-label { color: var(--text-muted); }
+.dash-stat-val { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* Altitude */
+.dash-big-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.dash-big-unit {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.dash-alt-chart {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+}
+
+.dash-heading-val {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* G-Force */
+.dash-gforce-grid {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 12px;
+}
+
+.dash-gforce-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--bg-tertiary);
+}
+.ring-2g { inset: 0; }
+.ring-1g { inset: 25%; }
+.ring-05g { inset: 37.5%; }
+
+.dash-gforce-crosshair-h,
+.dash-gforce-crosshair-v {
+  position: absolute;
+  background: var(--bg-tertiary);
+}
+.dash-gforce-crosshair-h { top: 50%; left: 0; right: 0; height: 1px; }
+.dash-gforce-crosshair-v { left: 50%; top: 0; bottom: 0; width: 1px; }
+
+.dash-gforce-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(0,200,83,0.6);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.1s, top 0.1s;
+  z-index: 1;
+}
+
+.dash-gforce-label {
+  position: absolute;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 768px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+    max-height: none;
+    overflow-y: auto;
+    padding-bottom: 40px;
+  }
+  .dash-gauge { width: 220px; height: 220px; }
+  .dash-speed-num { font-size: 2.8rem; }
+  .dash-needle { height: 80px; margin-top: -80px; }
+  .dash-tick {
+    transform-origin: center -76px;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-76px);
+  }
+}
+
+/* Landscape mobile: side-by-side */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dash-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    max-height: 100%;
+    overflow: hidden;
+  }
+  .dash-card { padding: 10px; }
+  .dash-gauge { width: 180px; height: 180px; }
+  .dash-speed-num { font-size: 2.2rem; }
+  .dash-needle { height: 65px; margin-top: -65px; }
+  .dash-tick {
+    height: 10px;
+    transform-origin: center -62px;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-62px);
+  }
+  .dash-big-value { font-size: 2rem; }
+  .dash-gforce-grid { width: 140px; height: 140px; }
+}
+
 /* ===== Hidden utility ===== */
 .hidden { display: none !important; }
