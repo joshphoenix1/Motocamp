@@ -27,6 +27,27 @@
   }
 
   function openDashboard() {
+    // Request GPS permission first — this triggers the browser prompt
+    if (!navigator.geolocation) {
+      alert('GPS is not supported on this device.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function() { startDashboard(); },
+      function(err) {
+        if (err.code === 1) {
+          alert('Location permission is required for the ride dashboard.\n\nPlease enable Location in your browser settings and try again.');
+        } else {
+          // Permission granted but other error (timeout etc) — open anyway
+          startDashboard();
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function startDashboard() {
     try {
       const overlay = document.getElementById('dashboard-overlay');
       overlay.classList.remove('hidden');
@@ -56,15 +77,11 @@
       updateDisplay(0, null, null);
 
       // Start GPS tracking
-      if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 10000
-        });
-      } else {
-        updateGpsStatus('error', 'GPS not supported');
-      }
+      watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      });
 
       // Monitor GPS health — if no update in 5s, show warning
       gpsCheckInterval = setInterval(() => {
