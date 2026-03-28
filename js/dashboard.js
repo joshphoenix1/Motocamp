@@ -439,13 +439,12 @@
     if (!canvas || altitudeHistory.length < 2) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    const w = rect.width;
-    const h = rect.height;
 
     ctx.clearRect(0, 0, w, h);
 
