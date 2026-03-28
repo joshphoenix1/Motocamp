@@ -23,10 +23,15 @@
   // ===== Load Data =====
   const loadingScreen = document.getElementById('loading-screen');
 
-  // Show the map right away, load data in background
+  // Show the map right away, load data in background, then open dashboard
   setTimeout(() => {
     loadingScreen.classList.add('fade-out');
-    setTimeout(() => loadingScreen.style.display = 'none', 500);
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+      // Auto-open the ride dashboard
+      const dashBtn = document.getElementById('btn-dashboard');
+      if (dashBtn) dashBtn.click();
+    }, 500);
   }, 1500);
 
   // Initialize route planner immediately (doesn't need data)
