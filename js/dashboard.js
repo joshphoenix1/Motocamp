@@ -325,6 +325,8 @@
       const avgKmh = hours > 0 ? (tripDistance / 1000) / hours : 0;
       avgEl.textContent = Math.round(avgKmh);
     }
+    const topEl = document.getElementById('dash-top-speed-value');
+    if (topEl) topEl.textContent = Math.round(maxSpeed);
   }
 
   function onGeoError(err) {
