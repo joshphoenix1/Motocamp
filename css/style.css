@@ -818,10 +818,11 @@ body.dashboard-active {
   align-items: center;
   justify-content: center;
   min-height: 0;
+  overflow: hidden;
 }
 
 .dash-speed-num {
-  font-size: 42vw;
+  font-size: min(42vw, 36vh);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
@@ -863,6 +864,8 @@ body.dashboard-active {
   align-items: baseline;
   gap: 6px;
   font-variant-numeric: tabular-nums;
+  width: 7rem;
+  justify-content: center;
 }
 
 .dash-alt-reading i {
@@ -922,6 +925,8 @@ body.dashboard-active {
   align-items: baseline;
   gap: 4px;
   font-variant-numeric: tabular-nums;
+  width: 4.5rem;
+  justify-content: center;
 }
 
 .dash-stat i {
