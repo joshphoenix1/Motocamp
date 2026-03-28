@@ -821,7 +821,7 @@ body.dashboard-active {
 }
 
 .dash-speed-num {
-  font-size: 28vw;
+  font-size: 42vw;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
@@ -1021,7 +1021,7 @@ body.dashboard-active {
 
 /* Desktop: cap the speed font size */
 @media (min-width: 769px) {
-  .dash-speed-num { font-size: 12rem; }
+  .dash-speed-num { font-size: 18rem; }
 }
 
 /* Landscape mobile */
@@ -1029,7 +1029,7 @@ body.dashboard-active {
   #dashboard-overlay { padding: 6px; }
   .dash-layout { flex-direction: row; flex-wrap: wrap; max-width: 100%; }
   .dash-speed-zone { flex: 1 1 50%; }
-  .dash-speed-num { font-size: 32vh; }
+  .dash-speed-num { font-size: 45vh; }
   .dash-speed-unit { font-size: 1.8rem; }
   .dash-speed-max { font-size: 1.2rem; }
   .dash-altitude-zone {
