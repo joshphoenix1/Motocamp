@@ -16,6 +16,19 @@
   let lastGpsSpeed = 0;
   let gpsCheckInterval = null;
 
+  // Trip odometer
+  let tripDistance = 0; // meters
+  let lastPosition = null;
+
+  // Gradient
+  let lastGradientAlt = null;
+  let lastGradientDist = 0;
+  let currentGradient = 0;
+
+  // Temperature
+  let currentTemp = null;
+  let lastTempFetch = 0;
+
   // Altitude history: store {time, alt} for last 30 minutes
   let altitudeHistory = [];
   const ALT_HISTORY_MS = 30 * 60 * 1000; // 30 minutes
@@ -76,9 +89,17 @@
       maxSpeed = 0;
       maxGForce = 0;
       altitudeHistory = [];
+      tripDistance = 0;
+      lastPosition = null;
+      lastGradientAlt = null;
+      lastGradientDist = 0;
+      currentGradient = 0;
+      currentTemp = null;
+      lastTempFetch = 0;
       gpsStatus = 'waiting';
       updateGpsStatus('waiting');
       updateDisplay(0, null, null);
+      updateStatsStrip();
 
       // Start GPS tracking
       watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
@@ -200,7 +221,7 @@
   }
 
   function onPosition(pos) {
-    const { speed, altitude, heading } = pos.coords;
+    const { latitude, longitude, speed, altitude, heading } = pos.coords;
     lastGpsTime = Date.now();
     updateGpsStatus('active');
 
@@ -210,15 +231,44 @@
     }
     if (speedKmh > maxSpeed) maxSpeed = speedKmh;
 
+    // Trip odometer — accumulate distance between GPS fixes
+    if (lastPosition) {
+      const d = haversine(lastPosition.lat, lastPosition.lng, latitude, longitude);
+      if (d > 3) { // ignore GPS jitter < 3m
+        tripDistance += d;
+
+        // Gradient — calculate over distance chunks
+        if (altitude !== null && lastGradientAlt !== null) {
+          const segDist = tripDistance - lastGradientDist;
+          if (segDist > 50) { // recalculate every 50m
+            const rise = altitude - lastGradientAlt;
+            currentGradient = (rise / segDist) * 100;
+            lastGradientAlt = altitude;
+            lastGradientDist = tripDistance;
+          }
+        } else if (altitude !== null) {
+          lastGradientAlt = altitude;
+          lastGradientDist = tripDistance;
+        }
+      }
+    }
+    lastPosition = { lat: latitude, lng: longitude };
+
     const alt = altitude !== null ? Math.round(altitude) : null;
     if (alt !== null) {
       const now = Date.now();
       altitudeHistory.push({ time: now, alt: alt });
-      // Trim to last 30 minutes
       const cutoff = now - ALT_HISTORY_MS;
       while (altitudeHistory.length > 0 && altitudeHistory[0].time < cutoff) {
         altitudeHistory.shift();
       }
+    }
+
+    // Fetch temperature every 5 minutes
+    const now = Date.now();
+    if (now - lastTempFetch > 5 * 60 * 1000) {
+      lastTempFetch = now;
+      fetchTemperature(latitude, longitude);
     }
 
     // GPS heading is reliable when moving (>5 km/h)
@@ -231,7 +281,39 @@
     const bestHeading = (speedKmh > 5 && gpsHeading !== null) ? gpsHeading : compassHeading;
     const hdg = bestHeading !== null ? Math.round(bestHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
+    updateStatsStrip();
     drawAltitudeChart();
+  }
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function fetchTemperature(lat, lon) {
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.current_weather) {
+          currentTemp = Math.round(data.current_weather.temperature);
+          updateStatsStrip();
+        }
+      })
+      .catch(() => {});
+  }
+
+  function updateStatsStrip() {
+    const tempEl = document.getElementById('dash-temp-value');
+    const tripEl = document.getElementById('dash-trip-value');
+    const gradEl = document.getElementById('dash-gradient-value');
+
+    if (tempEl) tempEl.textContent = currentTemp !== null ? currentTemp : '--';
+    if (tripEl) tripEl.textContent = (tripDistance / 1000).toFixed(1);
+    if (gradEl) gradEl.textContent = Math.round(currentGradient);
   }
 
   function onGeoError(err) {

@@ -902,6 +902,39 @@ body.dashboard-active {
   margin-left: 2px;
 }
 
+/* Trip stats strip */
+.dash-stats-strip {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.dash-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat i {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  align-self: center;
+}
+
+.dash-stat span:not(.dash-stat-unit) {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.dash-stat-unit {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
 /* G-Force zone — bottom quarter */
 .dash-gforce-zone {
   flex: 0 0 25%;
@@ -1002,6 +1035,20 @@ body.dashboard-active {
   .dash-alt-value { font-size: 1.2rem; }
   .dash-alt-reading #dash-heading-value { font-size: 1rem; }
   .dash-alt-chart { height: 40px; }
+  .dash-stats-strip {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,14,20,0.85);
+    border-radius: 8px;
+    padding: 4px 12px;
+    border: none;
+    gap: 16px;
+  }
+  .dash-stat span:not(.dash-stat-unit) { font-size: 0.8rem; }
+  .dash-stat-unit { font-size: 0.55rem; }
+  .dash-stat i { font-size: 0.55rem; }
   .dash-gforce-zone {
     flex: 0 0 35%;
     flex-direction: column;
