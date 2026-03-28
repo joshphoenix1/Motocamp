@@ -29,6 +29,9 @@
   let currentTemp = null;
   let lastTempFetch = 0;
 
+  // Average speed
+  let tripStartTime = null;
+
   // Altitude history: store {time, alt} for last 30 minutes
   let altitudeHistory = [];
   const ALT_HISTORY_MS = 30 * 60 * 1000; // 30 minutes
@@ -96,6 +99,7 @@
       currentGradient = 0;
       currentTemp = null;
       lastTempFetch = 0;
+      tripStartTime = null;
       gpsStatus = 'waiting';
       updateGpsStatus('waiting');
       updateDisplay(0, null, null);
@@ -232,6 +236,7 @@
     if (speedKmh > maxSpeed) maxSpeed = speedKmh;
 
     // Trip odometer — accumulate distance between GPS fixes
+    if (!tripStartTime) tripStartTime = Date.now();
     if (lastPosition) {
       const d = haversine(lastPosition.lat, lastPosition.lng, latitude, longitude);
       if (d > 3) { // ignore GPS jitter < 3m
@@ -310,10 +315,16 @@
     const tempEl = document.getElementById('dash-temp-value');
     const tripEl = document.getElementById('dash-trip-value');
     const gradEl = document.getElementById('dash-gradient-value');
+    const avgEl = document.getElementById('dash-avg-speed-value');
 
     if (tempEl) tempEl.textContent = currentTemp !== null ? currentTemp : '--';
     if (tripEl) tripEl.textContent = (tripDistance / 1000).toFixed(1);
     if (gradEl) gradEl.textContent = Math.round(currentGradient);
+    if (avgEl && tripStartTime) {
+      const hours = (Date.now() - tripStartTime) / 3600000;
+      const avgKmh = hours > 0 ? (tripDistance / 1000) / hours : 0;
+      avgEl.textContent = Math.round(avgKmh);
+    }
   }
 
   function onGeoError(err) {
