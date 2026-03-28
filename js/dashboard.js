@@ -224,7 +224,7 @@
   }
 
   function onDeviceMotion(event) {
-    const accel = event.accelerationIncludingGravity;
+    const accel = event.acceleration;
     if (!accel) return;
 
     const G = 9.81;
