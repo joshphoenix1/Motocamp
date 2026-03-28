@@ -7,9 +7,13 @@
   let gForceX = 0, gForceY = 0;
   let maxGForce = 0;
   let motionListener = null;
+  let orientationListener = null;
   let wakeLock = null;
   let gpsStatus = 'waiting'; // waiting, active, error
   let lastGpsTime = 0;
+  let compassHeading = null; // device compass fallback
+  let gpsHeading = null;
+  let lastGpsSpeed = 0;
   let gpsCheckInterval = null;
 
   // Altitude history: store {time, alt} for last 30 minutes
@@ -95,6 +99,12 @@
         motionListener = onDeviceMotion;
         window.addEventListener('devicemotion', motionListener);
       }
+
+      // Start compass for heading when stationary
+      if (window.DeviceOrientationEvent) {
+        orientationListener = onDeviceOrientation;
+        window.addEventListener('deviceorientation', orientationListener);
+      }
     } catch (e) {
       console.error('Dashboard open error:', e);
     }
@@ -118,6 +128,10 @@
       if (motionListener) {
         window.removeEventListener('devicemotion', motionListener);
         motionListener = null;
+      }
+      if (orientationListener) {
+        window.removeEventListener('deviceorientation', orientationListener);
+        orientationListener = null;
       }
       if (gpsCheckInterval) {
         clearInterval(gpsCheckInterval);
@@ -207,7 +221,15 @@
       }
     }
 
-    const hdg = heading !== null ? Math.round(heading) : null;
+    // GPS heading is reliable when moving (>5 km/h)
+    lastGpsSpeed = speedKmh;
+    if (heading !== null && speedKmh > 5) {
+      gpsHeading = heading;
+    }
+
+    // Use GPS heading when moving, compass when stationary
+    const bestHeading = (speedKmh > 5 && gpsHeading !== null) ? gpsHeading : compassHeading;
+    const hdg = bestHeading !== null ? Math.round(bestHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
     drawAltitudeChart();
   }
@@ -235,6 +257,35 @@
     if (totalG > maxGForce) maxGForce = totalG;
 
     updateGForce(gForceX, gForceY);
+  }
+
+  function onDeviceOrientation(event) {
+    let heading = null;
+
+    // Use webkitCompassHeading if available (iOS) — already true north
+    if (event.webkitCompassHeading !== undefined) {
+      heading = event.webkitCompassHeading;
+    } else if (event.alpha !== null) {
+      // Android: alpha is degrees from compass north (0-360)
+      // Adjust for landscape orientation using screen.orientation
+      heading = 360 - event.alpha;
+      const orientation = (screen.orientation || {}).angle || window.orientation || 0;
+      heading = (heading + orientation) % 360;
+    }
+
+    if (heading !== null) {
+      compassHeading = heading;
+      // Update display with compass heading when stationary
+      if (lastGpsSpeed <= 5) {
+        const hdg = Math.round(heading);
+        const headingEl = document.getElementById('dash-heading-value');
+        if (headingEl) {
+          const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+          const idx = Math.round(hdg / 45) % 8;
+          headingEl.textContent = `${dirs[idx]} ${hdg}°`;
+        }
+      }
+    }
   }
 
   function updateDisplay(speedKmh, altitude, heading) {
