@@ -434,6 +434,8 @@
     }
   }
 
+  let chartW = 0, chartH = 0;
+
   function drawAltitudeChart() {
     const canvas = document.getElementById('dash-altitude-chart');
     if (!canvas || altitudeHistory.length < 2) return;
@@ -441,10 +443,15 @@
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+    // Only resize the canvas backing store when the CSS size actually changes
+    if (w !== chartW || h !== chartH) {
+      chartW = w;
+      chartH = h;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+    }
     const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, w, h);
 
