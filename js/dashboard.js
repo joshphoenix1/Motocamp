@@ -32,9 +32,6 @@
   // Average speed
   let tripStartTime = null;
 
-  // Altitude history: store {time, alt} for last 30 minutes
-  let altitudeHistory = [];
-  const ALT_HISTORY_MS = 30 * 60 * 1000; // 30 minutes
 
   function initDashboard() {
     const btn = document.getElementById('btn-dashboard');
@@ -91,7 +88,6 @@
       // Reset stats
       maxSpeed = 0;
       maxGForce = 0;
-      altitudeHistory = [];
       tripDistance = 0;
       lastPosition = null;
       lastGradientAlt = null;
@@ -260,14 +256,6 @@
     lastPosition = { lat: latitude, lng: longitude };
 
     const alt = altitude !== null ? Math.round(altitude) : null;
-    if (alt !== null) {
-      const now = Date.now();
-      altitudeHistory.push({ time: now, alt: alt });
-      const cutoff = now - ALT_HISTORY_MS;
-      while (altitudeHistory.length > 0 && altitudeHistory[0].time < cutoff) {
-        altitudeHistory.shift();
-      }
-    }
 
     // Fetch temperature every 5 minutes
     const now = Date.now();
@@ -287,7 +275,6 @@
     const hdg = bestHeading !== null ? Math.round(bestHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
     updateStatsStrip();
-    drawAltitudeChart();
   }
 
   function haversine(lat1, lon1, lat2, lon2) {
@@ -434,81 +421,6 @@
     }
   }
 
-  let chartW = 0, chartH = 0;
-
-  function drawAltitudeChart() {
-    const canvas = document.getElementById('dash-altitude-chart');
-    if (!canvas || altitudeHistory.length < 2) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    // Only resize the canvas backing store when the CSS size actually changes
-    if (w !== chartW || h !== chartH) {
-      chartW = w;
-      chartH = h;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-    }
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    ctx.clearRect(0, 0, w, h);
-
-    const pts = altitudeHistory;
-    const now = Date.now();
-    const windowStart = now - ALT_HISTORY_MS;
-
-    const alts = pts.map(p => p.alt);
-    const minAlt = Math.min(...alts) - 20;
-    const maxAlt = Math.max(...alts) + 20;
-    const range = maxAlt - minAlt || 1;
-
-    // Draw grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = (i / 4) * h;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
-    // Draw altitude fill
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    pts.forEach((p, i) => {
-      const x = ((p.time - windowStart) / ALT_HISTORY_MS) * w;
-      const y = h - ((p.alt - minAlt) / range) * (h - 8);
-      if (i === 0) ctx.lineTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    const lastX = ((pts[pts.length - 1].time - windowStart) / ALT_HISTORY_MS) * w;
-    ctx.lineTo(lastX, h);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(0,200,83,0.12)';
-    ctx.fill();
-
-    // Draw altitude line
-    ctx.beginPath();
-    pts.forEach((p, i) => {
-      const x = ((p.time - windowStart) / ALT_HISTORY_MS) * w;
-      const y = h - ((p.alt - minAlt) / range) * (h - 8);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = '#00c853';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Min/max labels
-    ctx.font = '10px Inter, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(maxAlt)}m`, w - 4, 12);
-    ctx.fillText(`${Math.round(minAlt)}m`, w - 4, h - 4);
-  }
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {

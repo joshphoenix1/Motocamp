@@ -900,14 +900,6 @@ body.dashboard-active {
   font-variant-numeric: tabular-nums;
 }
 
-.dash-alt-chart {
-  display: block;
-  width: 100%;
-  height: 70px;
-  border-radius: 6px;
-  background: rgba(0,0,0,0.25);
-  box-sizing: border-box;
-}
 
 .dash-info-unit {
   font-size: 0.8rem;
@@ -1041,20 +1033,21 @@ body.dashboard-active {
   .dash-speed-max { font-size: 1.2rem; }
   .dash-altitude-zone {
     position: absolute;
-    bottom: 8px;
-    left: 8px;
+    bottom: 60px;
+    left: 0;
+    width: 50%;
     border: none;
     padding: 0;
     background: rgba(10,14,20,0.85);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 8px 14px;
+    box-sizing: border-box;
   }
-  .dash-alt-header { gap: 20px; margin-bottom: 4px; }
+  .dash-alt-header { gap: 20px; margin-bottom: 0; }
   .dash-alt-value { font-size: 1.8rem; }
   .dash-alt-unit { font-size: 1rem; }
   .dash-alt-reading i { font-size: 1.1rem; }
-  .dash-alt-reading #dash-heading-value { font-size: 1.5rem; }
-  .dash-alt-chart { height: 50px; }
+  .dash-alt-reading #dash-heading-value { font-size: 1.5rem; white-space: nowrap; }
   .dash-stats-strip {
     position: absolute;
     bottom: 8px;
@@ -1070,13 +1063,13 @@ body.dashboard-active {
   .dash-stat-unit { font-size: 0.75rem; }
   .dash-stat i { font-size: 0.75rem; }
   .dash-gforce-zone {
-    flex: 0 0 35%;
+    flex: 0 0 45%;
     flex-direction: column;
     gap: 8px;
   }
-  .dash-gforce-grid { width: 110px; height: 110px; }
+  .dash-gforce-grid { width: 160px; height: 160px; }
   .dash-gforce-stats { flex-direction: row; gap: 16px; align-items: baseline; }
-  .dash-gforce-num { font-size: 1.6rem; }
+  .dash-gforce-num { font-size: 2rem; }
   .dash-close-btn { width: 44px; height: 44px; top: 8px; right: 8px; font-size: 1.2rem; }
   .dash-gps-status { top: 8px; left: 8px; font-size: 0.8rem; padding: 5px 10px; }
 }
