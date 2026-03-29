@@ -855,15 +855,15 @@ body.dashboard-active {
 }
 
 .dash-alt-header {
-  display: flex;
-  justify-content: center;
-  gap: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   margin-bottom: 8px;
 }
 
 .dash-alt-reading {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 6px;
   font-variant-numeric: tabular-nums;
 }
@@ -915,9 +915,8 @@ body.dashboard-active {
 
 /* Trip stats strip */
 .dash-stats-strip {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   padding: 6px 16px;
   border-bottom: 1px solid var(--bg-tertiary);
 }
@@ -925,6 +924,7 @@ body.dashboard-active {
 .dash-stat {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 4px;
   font-variant-numeric: tabular-nums;
 }
