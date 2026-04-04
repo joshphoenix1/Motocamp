@@ -86,10 +86,11 @@ const Layers = {
           laundry: props.washing_machine === 'yes',
           dump: props.sanitary_dump_station === 'yes',
           dogs: props.dog === 'yes',
-          fee: props.fee === 'no' ? 'Free' : (props.charge || 'Varies'),
-          feeLevel: props.fee === 'no' ? 'free' : 'paid',
+          fee: props.fee === 'no' ? 'Free' : (props._enriched_fee || props.charge || null),
+          feeLevel: props.fee === 'no' || props._enriched_fee === 'Free' ? 'free' : 'paid',
         };
 
+        if (props.description) facilities.description = props.description;
         marker.facilityData = { ...facilities, name, typeDesc: isFreedom ? 'Freedom Camping' : 'Holiday Park' };
 
         marker.on('click', () => this.showCampsiteInfo(
@@ -111,7 +112,7 @@ const Layers = {
     this.groups['commercial-camps'] = commercialGroup;
     this.groups['freedom-camps'] = freedomGroup;
     this.map.addLayer(commercialGroup);
-    // Freedom camps off by default
+    this.map.addLayer(freedomGroup);
   },
 
   createAmenityLayers(data) {
@@ -444,13 +445,17 @@ const Layers = {
     const cellInfo = this.findCellCoverage(lat, lon);
 
     // Opening hours
-    const hours = props.opening_hours || null;
+    const hours = props.opening_hours || props._enriched_hours || null;
     const isDOC = typeDesc.includes('Basic') || typeDesc.includes('Backcountry') || typeDesc.includes('Standard') || typeDesc.includes('Serviced') || typeDesc.includes('Great Walk') || typeDesc.includes('Scenic');
-    const hoursHTML = hours
-      ? `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value">${hours}</div></div>`
-      : isDOC
-        ? `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value" style="color:var(--accent)">Open 24/7</div></div>`
-        : `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value">Check with operator</div></div>`;
+    const isFreedom = typeDesc === 'Freedom Camping';
+    const hoursDisplay = hours === '24/7' || isDOC || isFreedom
+      ? '<span style="color:var(--accent)">Open 24/7</span>'
+      : hours
+        ? hours
+        : '';
+    const hoursHTML = hoursDisplay
+      ? `<div class="info-detail"><div class="info-detail-label">Opening Hours</div><div class="info-detail-value">${hoursDisplay}</div></div>`
+      : '';
 
     // Operator
     const operator = props.operator || (isDOC ? 'Department of Conservation (DOC)' : props.brand || '');
@@ -483,7 +488,17 @@ const Layers = {
       <div class="info-details">
         <div class="info-detail">
           <div class="info-detail-label">Fee</div>
-          <div class="info-detail-value">${facilities.fee || props.charge || props.fee || 'Check website'}</div>
+          <div class="info-detail-value">${
+            facilities.fee === 'Free' || props.fee === 'no'
+              ? '<span style="color:var(--accent)">Free</span>'
+              : facilities.fee || props._enriched_fee || props.charge || ''
+          }${
+            !facilities.fee && !props._enriched_fee && !props.charge && props.fee !== 'no'
+              ? '<span style="color:var(--text-muted);font-size:0.75rem">Unknown — <a href="https://www.google.com/search?q=' + encodeURIComponent((props.name || 'campsite') + ' NZ campsite price') + '" target="_blank" style="color:var(--accent)">search</a></span>'
+              : ''
+          }${
+            facilities.fee && facilities.fee.includes('est.') ? ' <span style="color:var(--text-muted);font-size:0.7rem">(estimated)</span>' : ''
+          }</div>
         </div>
         ${hoursHTML}
         ${reservationHTML}
