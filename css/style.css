@@ -857,16 +857,20 @@ body.dashboard-active {
 }
 
 .dash-alt-header {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: clamp(8px, 2vw, 20px);
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .dash-alt-reading {
   display: flex;
   align-items: baseline;
-  justify-content: center;
   gap: 6px;
+  white-space: nowrap;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -877,12 +881,10 @@ body.dashboard-active {
 }
 
 .dash-alt-value {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 5vw, 2rem);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
-  min-width: 3.5ch;
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
@@ -892,11 +894,9 @@ body.dashboard-active {
 }
 
 .dash-alt-reading #dash-heading-value {
-  font-size: 1.4rem;
+  font-size: clamp(1rem, 4vw, 1.4rem);
   font-weight: 600;
   color: var(--accent);
-  min-width: 5ch;
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
