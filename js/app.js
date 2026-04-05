@@ -12,6 +12,7 @@
     maxBounds: [[-50, 160], [-33, 185]],
     maxBoundsViscosity: 0.8
   });
+  window.map = map;
 
   // Add base tile layer immediately so the map shows
   // Store reference so Layers.setupBasemapSelector can remove it specifically

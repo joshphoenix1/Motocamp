@@ -351,23 +351,29 @@
         </div>
       </div>
 
-      <!-- G-Force: bottom quarter -->
-      <div class="dash-gforce-zone">
-        <div class="dash-gforce-grid">
-          <div class="dash-gforce-ring ring-2g"></div>
-          <div class="dash-gforce-ring ring-1g"></div>
-          <div class="dash-gforce-ring ring-05g"></div>
-          <div class="dash-gforce-crosshair-h"></div>
-          <div class="dash-gforce-crosshair-v"></div>
-          <div class="dash-gforce-dot" id="dash-gforce-dot"></div>
-          <span class="dash-gforce-label" style="top:2px;left:50%;transform:translateX(-50%)">Brake</span>
-          <span class="dash-gforce-label" style="bottom:2px;left:50%;transform:translateX(-50%)">Accel</span>
-          <span class="dash-gforce-label" style="left:2px;top:50%;transform:translateY(-50%)">L</span>
-          <span class="dash-gforce-label" style="right:2px;top:50%;transform:translateY(-50%)">R</span>
+      <!-- Compass arrow to destination: bottom quarter -->
+      <div class="dash-compass-zone" id="dash-compass-zone">
+        <div class="dash-compass-arrow-wrap">
+          <svg class="dash-compass-arrow" id="dash-compass-arrow" viewBox="0 0 100 100">
+            <polygon points="50,6 86,80 50,64 14,80"
+                     fill="#00c853" stroke="#00e676" stroke-width="3" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <div class="dash-gforce-stats">
-          <div><span class="dash-gforce-num" id="dash-gforce-value">0.0</span><span class="dash-info-unit">g</span></div>
-          <div class="dash-gforce-max">max <span id="dash-max-gforce">0.0</span>g</div>
+        <div class="dash-compass-info">
+          <div class="dash-compass-target" id="dash-compass-target">Tap to set destination</div>
+          <div class="dash-compass-readout">
+            <span class="dash-compass-num" id="dash-compass-dist">--</span><span class="dash-info-unit">km</span>
+            <span class="dash-compass-brg">bearing <span id="dash-compass-bearing">--</span>°</span>
+          </div>
+        </div>
+      </div>
+      <div class="dash-compass-input hidden" id="dash-compass-input">
+        <input type="text" id="dash-compass-address" placeholder="Enter address or place..." autocomplete="off">
+        <div class="dash-compass-results" id="dash-compass-results"></div>
+        <div class="dash-compass-input-row">
+          <button type="button" id="dash-compass-cancel">Cancel</button>
+          <button type="button" id="dash-compass-clear">Clear</button>
+          <button type="button" id="dash-compass-pick">Pick on map</button>
         </div>
       </div>
     </div>

@@ -943,79 +943,141 @@ body.dashboard-active {
   color: var(--text-muted);
 }
 
-/* G-Force zone — bottom quarter */
-.dash-gforce-zone {
+/* Compass arrow zone — bottom quarter */
+.dash-compass-zone {
   flex: 0 0 25%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  padding: 8px 0;
+  gap: 24px;
+  padding: 8px 16px;
+  cursor: pointer;
+  user-select: none;
 }
 
-.dash-gforce-grid {
-  position: relative;
-  width: 100px;
-  height: 100px;
+.dash-compass-arrow-wrap {
   flex-shrink: 0;
+  width: min(140px, 22vh);
+  height: min(140px, 22vh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 18px rgba(0,200,83,0.55));
 }
 
-.dash-gforce-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid var(--bg-tertiary);
-}
-.ring-2g { inset: 0; }
-.ring-1g { inset: 25%; }
-.ring-05g { inset: 37.5%; }
-
-.dash-gforce-crosshair-h,
-.dash-gforce-crosshair-v {
-  position: absolute;
-  background: var(--bg-tertiary);
-}
-.dash-gforce-crosshair-h { top: 50%; left: 0; right: 0; height: 1px; }
-.dash-gforce-crosshair-v { left: 50%; top: 0; bottom: 0; width: 1px; }
-
-.dash-gforce-dot {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 12px rgba(0,200,83,0.6);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  transition: left 0.1s, top 0.1s;
-  z-index: 1;
+.dash-compass-arrow {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s ease-out;
+  transform-origin: 50% 50%;
 }
 
-.dash-gforce-label {
-  position: absolute;
-  font-size: 0.5rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.dash-compass-arrow.no-target {
+  opacity: 0.25;
+  filter: grayscale(1);
 }
 
-.dash-gforce-stats {
+.dash-compass-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
-.dash-gforce-num {
+.dash-compass-target {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-compass-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dash-compass-num {
   font-size: 1.8rem;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
-.dash-gforce-max {
+.dash-compass-brg {
   font-size: 0.75rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* Address input popover */
+.dash-compass-input {
+  position: fixed;
+  left: 50%;
+  bottom: 20%;
+  transform: translateX(-50%);
+  width: min(420px, 92vw);
+  background: rgba(10,14,20,0.96);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 10px;
+  padding: 12px;
+  z-index: 10;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+}
+
+.dash-compass-input input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.dash-compass-results {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.dash-compass-results-item {
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dash-compass-results-item:hover,
+.dash-compass-results-item:active {
+  background: var(--bg-tertiary);
+}
+
+.dash-compass-input-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dash-compass-input-row button {
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.dash-compass-input-row button:hover {
+  background: var(--bg-tertiary);
 }
 
 /* Desktop: cap the speed font size */
@@ -1062,14 +1124,15 @@ body.dashboard-active {
   .dash-stat span:not(.dash-stat-unit) { font-size: 1.1rem; }
   .dash-stat-unit { font-size: 0.75rem; }
   .dash-stat i { font-size: 0.75rem; }
-  .dash-gforce-zone {
+  .dash-compass-zone {
     flex: 0 0 45%;
     flex-direction: column;
     gap: 8px;
   }
-  .dash-gforce-grid { width: 160px; height: 160px; }
-  .dash-gforce-stats { flex-direction: row; gap: 16px; align-items: baseline; }
-  .dash-gforce-num { font-size: 2rem; }
+  .dash-compass-arrow-wrap { width: min(130px, 30vh); height: min(130px, 30vh); }
+  .dash-compass-readout { gap: 14px; }
+  .dash-compass-num { font-size: 2rem; }
+  .dash-compass-target { max-width: 80vw; }
   .dash-close-btn { width: 44px; height: 44px; top: 8px; right: 8px; font-size: 1.2rem; }
   .dash-gps-status { top: 8px; left: 8px; font-size: 0.8rem; padding: 5px 10px; }
 }

@@ -1,13 +1,13 @@
-// ===== GPS Dashboard - Speedometer, Altitude & G-Force =====
+// ===== GPS Dashboard - Speedometer, Altitude & Compass Arrow =====
 (function() {
   'use strict';
 
+  const TARGET_STORAGE_KEY = 'motocamp-compass-target';
+
   let watchId = null;
   let maxSpeed = 0;
-  let gForceX = 0, gForceY = 0;
-  let maxGForce = 0;
-  let motionListener = null;
   let orientationListener = null;
+  let screenOrientationListener = null;
   let wakeLock = null;
   let gpsStatus = 'waiting'; // waiting, active, error
   let lastGpsTime = 0;
@@ -31,6 +31,27 @@
 
   // Average speed
   let tripStartTime = null;
+
+  // Compass target destination
+  let compassTarget = null; // { lat, lng, name }
+  let currentLat = null, currentLng = null;
+  let currentHeading = null; // combined best heading (gps or compass)
+  let geocodeTimer = null;
+  let smoothedArrowRot = null; // EMA-smoothed arrow rotation in degrees
+
+  function loadCompassTarget() {
+    try {
+      const raw = localStorage.getItem(TARGET_STORAGE_KEY);
+      if (raw) compassTarget = JSON.parse(raw);
+    } catch (e) { compassTarget = null; }
+  }
+
+  function saveCompassTarget() {
+    try {
+      if (compassTarget) localStorage.setItem(TARGET_STORAGE_KEY, JSON.stringify(compassTarget));
+      else localStorage.removeItem(TARGET_STORAGE_KEY);
+    } catch (e) { /* ignore */ }
+  }
 
 
   function initDashboard() {
@@ -64,7 +85,7 @@
     );
   }
 
-  function startDashboard() {
+  function startDashboard(preserveStats) {
     try {
       const overlay = document.getElementById('dashboard-overlay');
       overlay.classList.remove('hidden');
@@ -85,20 +106,21 @@
         }
       } catch (e) { /* ignore */ }
 
-      // Reset stats
-      maxSpeed = 0;
-      maxGForce = 0;
-      tripDistance = 0;
-      lastPosition = null;
-      lastGradientAlt = null;
-      lastGradientDist = 0;
-      currentGradient = 0;
-      currentTemp = null;
-      lastTempFetch = 0;
-      tripStartTime = null;
+      // Reset stats (unless we're resuming — e.g. after a map-pick side trip)
+      if (!preserveStats) {
+        maxSpeed = 0;
+        tripDistance = 0;
+        lastPosition = null;
+        lastGradientAlt = null;
+        lastGradientDist = 0;
+        currentGradient = 0;
+        currentTemp = null;
+        lastTempFetch = 0;
+        tripStartTime = null;
+        updateDisplay(0, null, null);
+      }
       gpsStatus = 'waiting';
       updateGpsStatus('waiting');
-      updateDisplay(0, null, null);
       updateStatsStrip();
 
       // Start GPS tracking
@@ -115,17 +137,22 @@
         }
       }, 2000);
 
-      // Start accelerometer
-      if (window.DeviceMotionEvent) {
-        motionListener = onDeviceMotion;
-        window.addEventListener('devicemotion', motionListener);
-      }
-
-      // Start compass for heading when stationary
+      // Start compass for heading
       if (window.DeviceOrientationEvent) {
         orientationListener = onDeviceOrientation;
         window.addEventListener('deviceorientation', orientationListener);
       }
+
+      // Load saved target and wire up UI
+      loadCompassTarget();
+      setupCompassUI();
+      renderCompassTarget();
+      updateCompassArrow();
+
+      // Watch for phone orientation flips (portrait ↔ landscape)
+      screenOrientationListener = onScreenOrientationChange;
+      window.addEventListener('orientationchange', screenOrientationListener);
+      window.addEventListener('resize', screenOrientationListener);
     } catch (e) {
       console.error('Dashboard open error:', e);
     }
@@ -146,13 +173,14 @@
         navigator.geolocation.clearWatch(watchId);
         watchId = null;
       }
-      if (motionListener) {
-        window.removeEventListener('devicemotion', motionListener);
-        motionListener = null;
-      }
       if (orientationListener) {
         window.removeEventListener('deviceorientation', orientationListener);
         orientationListener = null;
+      }
+      if (screenOrientationListener) {
+        window.removeEventListener('orientationchange', screenOrientationListener);
+        window.removeEventListener('resize', screenOrientationListener);
+        screenOrientationListener = null;
       }
       if (gpsCheckInterval) {
         clearInterval(gpsCheckInterval);
@@ -224,6 +252,8 @@
     const { latitude, longitude, speed, altitude, heading } = pos.coords;
     lastGpsTime = Date.now();
     updateGpsStatus('active');
+    currentLat = latitude;
+    currentLng = longitude;
 
     let speedKmh = 0;
     if (speed !== null && speed >= 0) {
@@ -272,9 +302,11 @@
 
     // Use GPS heading when moving, compass when stationary
     const bestHeading = (speedKmh > 5 && gpsHeading !== null) ? gpsHeading : compassHeading;
+    currentHeading = bestHeading;
     const hdg = bestHeading !== null ? Math.round(bestHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
     updateStatsStrip();
+    updateCompassArrow();
   }
 
   function haversine(lat1, lon1, lat2, lon2) {
@@ -327,20 +359,6 @@
     }
   }
 
-  function onDeviceMotion(event) {
-    const accel = event.acceleration;
-    if (!accel) return;
-
-    const G = 9.81;
-    gForceX = (accel.x || 0) / G;
-    gForceY = (accel.y || 0) / G;
-
-    const totalG = Math.sqrt(gForceX * gForceX + gForceY * gForceY);
-    if (totalG > maxGForce) maxGForce = totalG;
-
-    updateGForce(gForceX, gForceY);
-  }
-
   function onDeviceOrientation(event) {
     let heading = null;
 
@@ -359,6 +377,7 @@
       compassHeading = heading;
       // Update display with compass heading when stationary
       if (lastGpsSpeed <= 5) {
+        currentHeading = heading;
         const hdg = Math.round(heading);
         const headingEl = document.getElementById('dash-heading-value');
         if (headingEl) {
@@ -366,6 +385,7 @@
           const idx = Math.round(hdg / 45) % 8;
           headingEl.textContent = `${dirs[idx]} ${hdg}°`;
         }
+        updateCompassArrow();
       }
     }
   }
@@ -391,34 +411,201 @@
     }
   }
 
-  function updateGForce(gx, gy) {
-    const dot = document.getElementById('dash-gforce-dot');
-    const gVal = document.getElementById('dash-gforce-value');
-    const maxGEl = document.getElementById('dash-max-gforce');
-    if (!dot) return;
+  // ===== Compass Arrow to Destination =====
 
-    const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
-    const maxG = 2;
-    const nx = clamp(gx / maxG, -1, 1);
-    const ny = clamp(-gy / maxG, -1, 1);
+  function bearingTo(lat1, lon1, lat2, lon2) {
+    const toRad = x => x * Math.PI / 180;
+    const toDeg = x => x * 180 / Math.PI;
+    const φ1 = toRad(lat1), φ2 = toRad(lat2);
+    const Δλ = toRad(lon2 - lon1);
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  }
 
-    dot.style.left = `${50 + nx * 45}%`;
-    dot.style.top = `${50 + ny * 45}%`;
-
-    const totalG = Math.sqrt(gx * gx + gy * gy);
-    gVal.textContent = totalG.toFixed(1);
-    maxGEl.textContent = maxGForce.toFixed(1);
-
-    if (totalG > 1.5) {
-      dot.style.background = '#ff5252';
-      dot.style.boxShadow = '0 0 12px rgba(255,82,82,0.8)';
-    } else if (totalG > 0.8) {
-      dot.style.background = '#ff9800';
-      dot.style.boxShadow = '0 0 12px rgba(255,152,0,0.6)';
-    } else {
-      dot.style.background = 'var(--accent)';
-      dot.style.boxShadow = '0 0 12px rgba(0,200,83,0.6)';
+  function renderCompassTarget() {
+    const nameEl = document.getElementById('dash-compass-target');
+    const arrow = document.getElementById('dash-compass-arrow');
+    if (nameEl) {
+      nameEl.textContent = compassTarget ? compassTarget.name : 'Tap to set destination';
     }
+    if (arrow) {
+      arrow.classList.toggle('no-target', !compassTarget);
+    }
+  }
+
+  function updateCompassArrow() {
+    const arrow = document.getElementById('dash-compass-arrow');
+    const distEl = document.getElementById('dash-compass-dist');
+    const brgEl = document.getElementById('dash-compass-bearing');
+    if (!arrow) return;
+
+    if (!compassTarget || currentLat === null || currentLng === null) {
+      if (distEl) distEl.textContent = '--';
+      if (brgEl) brgEl.textContent = '--';
+      return;
+    }
+
+    const brg = bearingTo(currentLat, currentLng, compassTarget.lat, compassTarget.lng);
+    const distM = haversine(currentLat, currentLng, compassTarget.lat, compassTarget.lng);
+    const distKm = distM / 1000;
+
+    if (distEl) distEl.textContent = distKm >= 10 ? Math.round(distKm) : distKm.toFixed(1);
+    if (brgEl) brgEl.textContent = Math.round(brg);
+
+    // Rotate arrow relative to current heading so "up" = ahead
+    const rawRot = currentHeading !== null ? ((brg - currentHeading + 360) % 360) : brg;
+
+    // 5-period EMA smoothing. Keep the rotation UNWRAPPED (cumulative) so that
+    // CSS rotate() always travels the short way — e.g. 358° → 362° instead of
+    // 358° → 2° (which would spin 356° the long way).
+    const alpha = 2 / (5 + 1); // ≈ 0.333
+    if (smoothedArrowRot === null) {
+      smoothedArrowRot = rawRot;
+    } else {
+      // shortest signed delta relative to current (unwrapped) smoothed value
+      const wrapped = ((smoothedArrowRot % 360) + 360) % 360;
+      const delta = ((rawRot - wrapped + 540) % 360) - 180;
+      smoothedArrowRot += alpha * delta;
+    }
+    arrow.style.transform = `rotate(${smoothedArrowRot}deg)`;
+  }
+
+  let orientationDebounce = null;
+  function onScreenOrientationChange() {
+    // Debounce — some browsers fire resize many times during a flip
+    clearTimeout(orientationDebounce);
+    orientationDebounce = setTimeout(() => {
+      // Re-prime EMA so the arrow snaps to the corrected angle cleanly
+      smoothedArrowRot = null;
+      // Force re-read of screen.orientation.angle in compass calc on next event;
+      // meanwhile repaint with whatever heading we have
+      updateCompassArrow();
+    }, 150);
+  }
+
+  // ===== Compass destination UI (address + map pick) =====
+
+  function setupCompassUI() {
+    const zone = document.getElementById('dash-compass-zone');
+    const panel = document.getElementById('dash-compass-input');
+    const input = document.getElementById('dash-compass-address');
+    const results = document.getElementById('dash-compass-results');
+    const cancelBtn = document.getElementById('dash-compass-cancel');
+    const clearBtn = document.getElementById('dash-compass-clear');
+    const pickBtn = document.getElementById('dash-compass-pick');
+    if (!zone || !panel) return;
+
+    if (!zone._compassWired) {
+      zone.addEventListener('click', () => {
+        panel.classList.remove('hidden');
+        input.value = '';
+        results.innerHTML = '';
+        setTimeout(() => input.focus(), 50);
+      });
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.classList.add('hidden');
+      });
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        compassTarget = null;
+        saveCompassTarget();
+        renderCompassTarget();
+        updateCompassArrow();
+        panel.classList.add('hidden');
+      });
+      if (pickBtn) {
+        pickBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          panel.classList.add('hidden');
+          startMapPick();
+        });
+      }
+      input.addEventListener('input', () => {
+        clearTimeout(geocodeTimer);
+        const q = input.value.trim();
+        if (q.length < 3) { results.innerHTML = ''; return; }
+        geocodeTimer = setTimeout(() => runGeocode(q, results, panel), 400);
+      });
+      panel.addEventListener('click', (e) => e.stopPropagation());
+      zone._compassWired = true;
+    }
+  }
+
+  function runGeocode(q, resultsDiv, panel) {
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6`)
+      .then(r => r.json())
+      .then(data => {
+        resultsDiv.innerHTML = '';
+        if (!data.length) {
+          resultsDiv.innerHTML = '<div class="dash-compass-results-item" style="color:var(--text-muted)">No results</div>';
+          return;
+        }
+        data.forEach(item => {
+          const d = document.createElement('div');
+          d.className = 'dash-compass-results-item';
+          d.textContent = item.display_name;
+          d.addEventListener('click', () => {
+            setCompassTarget({
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon),
+              name: item.display_name.split(',').slice(0, 2).join(',').trim()
+            });
+            panel.classList.add('hidden');
+          });
+          resultsDiv.appendChild(d);
+        });
+      })
+      .catch(() => {
+        resultsDiv.innerHTML = '<div class="dash-compass-results-item" style="color:var(--text-muted)">Geocoding failed</div>';
+      });
+  }
+
+  function setCompassTarget(t) {
+    compassTarget = t;
+    smoothedArrowRot = null; // re-prime EMA on new target
+    saveCompassTarget();
+    renderCompassTarget();
+    updateCompassArrow();
+  }
+
+  function startMapPick() {
+    // Close the dashboard overlay so the map is usable, then arm a one-shot click listener
+    closeDashboard();
+    const map = window.map;
+    if (!map || typeof map.on !== 'function') {
+      alert('Map not available.');
+      return;
+    }
+    const banner = document.createElement('div');
+    banner.id = 'compass-pick-banner';
+    banner.textContent = 'Tap the map to set destination (Esc to cancel)';
+    banner.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#00c853;color:#000;font-weight:600;padding:10px 16px;border-radius:8px;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.4);cursor:pointer;';
+    document.body.appendChild(banner);
+
+    const prevCursor = map.getContainer().style.cursor;
+    map.getContainer().style.cursor = 'crosshair';
+
+    const cleanup = (reopenDash) => {
+      map.off('click', onMapClick);
+      document.removeEventListener('keydown', onKey);
+      banner.remove();
+      map.getContainer().style.cursor = prevCursor;
+      if (reopenDash) startDashboard(true);
+    };
+    const onMapClick = (e) => {
+      const { lat, lng } = e.latlng;
+      setCompassTarget({
+        lat, lng,
+        name: `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+      });
+      cleanup(true);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') cleanup(true); };
+    banner.addEventListener('click', () => cleanup(true));
+    map.on('click', onMapClick);
+    document.addEventListener('keydown', onKey);
   }
 
 
