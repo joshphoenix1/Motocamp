@@ -439,6 +439,9 @@
     map.invalidateSize();
   });
 
+  // ===== Offline Maps =====
+  if (typeof OfflineMaps !== 'undefined') OfflineMaps.init();
+
   // ===== Health Check =====
   HealthCheck.start(map);
 

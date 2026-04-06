@@ -65,6 +65,7 @@
         <button class="tab-btn active" data-tab="layers"><i class="fas fa-layer-group"></i> Layers</button>
         <button class="tab-btn" data-tab="route"><i class="fas fa-route"></i> Route</button>
         <button class="tab-btn" data-tab="weather"><i class="fas fa-cloud-sun"></i> Weather</button>
+        <button class="tab-btn" data-tab="offline"><i class="fas fa-download"></i> Offline</button>
       </div>
 
       <!-- Layers Tab -->
@@ -373,6 +374,18 @@
           <div id="weather-point-content"></div>
         </div>
       </div>
+
+      <!-- Offline Tab -->
+      <div id="tab-offline" class="tab-content">
+        <div class="sidebar-section">
+          <h3><i class="fas fa-download"></i> Offline Maps</h3>
+          <p class="hint">Download map regions for use without internet. Maps are stored in your browser.</p>
+          <div id="offline-status" style="margin:10px 0"></div>
+        </div>
+        <div class="sidebar-section">
+          <div id="offline-region-list"></div>
+        </div>
+      </div>
     </div>
 
     <div class="sidebar-footer">
@@ -557,6 +570,7 @@
   <script src="js/gravel-roads.js?v=20260406d"></script>
   <script src="js/route.js?v=20260406d"></script>
   <script src="js/dashboard.js?v=20260406d"></script>
+  <script src="js/offline-maps.js?v=20260406d"></script>
   <script src="js/app.js?v=20260406d"></script>
 </body>
 </html>
