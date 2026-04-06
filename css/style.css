@@ -927,6 +927,17 @@ body.dashboard-active {
   border-radius: 3px;
 }
 
+.dash-radar-title {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+}
+
 /* Centre column: speed + lean */
 .dash-centre-col {
   flex: 1;
