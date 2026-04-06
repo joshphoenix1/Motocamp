@@ -952,7 +952,7 @@
         else color = 'rgba(80,200,255,0.55)';                     // drizzle
 
         // Blob size — large enough to overlap and form a continuous rain field
-        const blobR = Math.max(12, Math.min(22, 10 + precip * 2)) * (size / 150);
+        const blobR = Math.max(16, Math.min(30, 14 + precip * 2.5)) * (size / 150);
 
         // Soft radial gradient blob with solid core
         const grad = ctx.createRadialGradient(screenX, screenY, blobR * 0.3, screenX, screenY, blobR);

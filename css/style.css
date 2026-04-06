@@ -892,7 +892,7 @@ body.dashboard-active {
 
 /* Left column: radar */
 .dash-left-col {
-  flex: 0 0 180px;
+  flex: 0 0 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -910,8 +910,8 @@ body.dashboard-active {
 
 .dash-radar-wrap {
   position: relative;
-  width: min(150px, 38vh);
-  height: min(150px, 38vh);
+  width: min(190px, 48vh);
+  height: min(190px, 48vh);
   border-radius: 50%;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.08);
