@@ -234,7 +234,8 @@ const Layers = {
     // Create cluster groups for each Overpass category
     const overpassCategories = [
       'campsites', 'fuel', 'water', 'toilets', 'shops', 'shelters',
-      'dumpStations', 'repairs', 'picnicSites', 'viewpoints', 'passes', 'accommodation',
+      'dumpStations', 'repairs', 'picnicSites', 'viewpoints', 'passes',
+      'hostels', 'alpineHuts', 'hotels', 'guesthouses', 'cabins',
       'hospitals', 'atms', 'borderCrossings', 'restAreas', 'fords', 'ferries',
       'waterSources', 'embassies',
     ];
@@ -300,7 +301,11 @@ const Layers = {
       shelters: props.tourism === 'wilderness_hut' ? 'Wilderness Hut' : 'Shelter',
       dumpStations: 'Dump Station', repairs: props.shop === 'motorcycle' ? 'Motorcycle Shop' : 'Repair / Mechanic',
       picnicSites: 'Picnic Site', viewpoints: 'Viewpoint', passes: 'Mountain Pass',
-      accommodation: props.tourism === 'alpine_hut' ? 'Alpine Hut' : 'Hostel',
+      hostels: 'Hostel / Backpackers',
+      alpineHuts: 'Alpine Hut / Refuge',
+      hotels: props.tourism === 'motel' ? 'Motel' : 'Hotel',
+      guesthouses: props.tourism === 'bed_and_breakfast' ? 'Bed & Breakfast' : 'Guesthouse',
+      cabins: props.tourism === 'chalet' ? 'Chalet' : 'Cabin',
       hospitals: props.emergency === 'yes' ? 'Hospital (Emergency)' : (props.amenity === 'clinic' ? 'Clinic' : 'Hospital'),
       atms: props.amenity === 'bank' ? 'Bank' : 'ATM',
       borderCrossings: 'Border Crossing', restAreas: 'Rest Area',
@@ -472,8 +477,8 @@ const Layers = {
       else if (props.charge) html += row('Fee', esc(props.charge));
     }
 
-    // === Accommodation ===
-    if (category === 'accommodation') {
+    // === Accommodation (all types) ===
+    if (['hostels', 'alpineHuts', 'hotels', 'guesthouses', 'cabins'].includes(category)) {
       if (props.beds) html += row('Beds', props.beds);
       if (props.rooms) html += row('Rooms', props.rooms);
       if (props.stars) html += row('Rating', '★'.repeat(parseInt(props.stars)));

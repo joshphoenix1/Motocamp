@@ -661,6 +661,9 @@ body {
 .marker-viewpoint { background: #7e57c2; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-pass { background: #5d4037; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-accommodation { background: #1e88e5; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-hotel { background: #7b1fa2; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-guesthouse { background: #c2185b; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-cabin { background: #4e342e; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-hospital { background: #d32f2f; color: #fff; width: 16px; height: 16px; font-size: 8px; }
 .marker-atm { background: #43a047; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-border { background: #f9a825; color: #000; width: 16px; height: 16px; font-size: 8px; }

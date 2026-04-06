@@ -81,11 +81,35 @@ const OverpassLoader = {
       icon: 'mountain',
       markerType: 'pass',
     },
-    accommodation: {
-      label: 'Hostels & Lodges',
-      query: '(node["tourism"="hostel"]({{bbox}});node["tourism"="alpine_hut"]({{bbox}});way["tourism"="hostel"]({{bbox}});way["tourism"="alpine_hut"]({{bbox}}););out center body;',
+    hostels: {
+      label: 'Hostels & Backpackers',
+      query: '(node["tourism"="hostel"]({{bbox}});way["tourism"="hostel"]({{bbox}}););out center body;',
       icon: 'bed',
       markerType: 'accommodation',
+    },
+    alpineHuts: {
+      label: 'Alpine Huts & Refuges',
+      query: '(node["tourism"="alpine_hut"]({{bbox}});way["tourism"="alpine_hut"]({{bbox}}););out center body;',
+      icon: 'house-chimney',
+      markerType: 'shelter',
+    },
+    hotels: {
+      label: 'Hotels & Motels',
+      query: '(node["tourism"="hotel"]({{bbox}});node["tourism"="motel"]({{bbox}});way["tourism"="hotel"]({{bbox}});way["tourism"="motel"]({{bbox}}););out center body;',
+      icon: 'hotel',
+      markerType: 'hotel',
+    },
+    guesthouses: {
+      label: 'Guesthouses & B&Bs',
+      query: '(node["tourism"="guest_house"]({{bbox}});way["tourism"="guest_house"]({{bbox}});node["tourism"="bed_and_breakfast"]({{bbox}});way["tourism"="bed_and_breakfast"]({{bbox}}););out center body;',
+      icon: 'house-user',
+      markerType: 'guesthouse',
+    },
+    cabins: {
+      label: 'Cabins & Chalets',
+      query: '(node["tourism"="chalet"]({{bbox}});way["tourism"="chalet"]({{bbox}});node["building"="cabin"]["tourism"]({{bbox}}););out center body;',
+      icon: 'house',
+      markerType: 'cabin',
     },
     hospitals: {
       label: 'Hospitals & Clinics',
