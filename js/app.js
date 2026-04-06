@@ -209,7 +209,7 @@
   ctxMenu.innerHTML = `
     <div class="ctx-item" data-action="directions-from"><i class="fas fa-play"></i> Directions from here</div>
     <div class="ctx-item" data-action="directions-to"><i class="fas fa-flag-checkered"></i> Directions to here</div>
-    <div class="ctx-item" data-action="add-waypoint"><i class="fas fa-map-pin"></i> Add as waypoint</div>
+    <div class="ctx-item" data-action="add-waypoint"><i class="fas fa-map-pin"></i> Add as destination</div>
     <div class="ctx-divider"></div>
     <div class="ctx-item" data-action="whats-here"><i class="fas fa-info-circle"></i> What's here?</div>
     <div class="ctx-item" data-action="nearby"><i class="fas fa-search-location"></i> Nearby services</div>
@@ -296,7 +296,27 @@
       switchToRoute();
       const snapped = await snapToRoad(ctxLatLng.lat, ctxLatLng.lng);
       const name = await reverseGeocode(snapped.lat, snapped.lon);
-      RoutePlanner.addAsWaypoint(snapped.lat, snapped.lon, name);
+
+      // Move current end → waypoint, set this as new end
+      const endInput = document.getElementById('route-end');
+      if (endInput.dataset.lat) {
+        RoutePlanner.addAsWaypoint(
+          parseFloat(endInput.dataset.lat),
+          parseFloat(endInput.dataset.lon),
+          endInput.value
+        );
+      }
+      endInput.value = name;
+      endInput.dataset.lat = snapped.lat;
+      endInput.dataset.lon = snapped.lon;
+
+      // Close info panel, open sidebar on mobile
+      document.getElementById('info-panel').classList.add('hidden');
+      if (window.innerWidth <= 768) document.getElementById('sidebar').classList.add('open');
+
+      // Auto-plan if start is set
+      const startInput = document.getElementById('route-start');
+      if (startInput.dataset.lat) document.getElementById('plan-route').click();
     }
 
     else if (action === 'whats-here') {
