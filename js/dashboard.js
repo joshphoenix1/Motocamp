@@ -807,12 +807,14 @@
   // current radar returns.
 
   let precipGrid = null;     // { lats[], lons[], precip[][], time }
+  let precipFetchInFlight = false;
   const PRECIP_GRID_SIZE = 7; // 7x7 = 49 points
   const PRECIP_SPACING_DEG = 0.12; // ~13km spacing → ~80km total coverage
   const RADAR_RANGE_KM = 30;
 
   function fetchPrecipGrid() {
-    if (!currentLat || !currentLng) return;
+    if (!currentLat || !currentLng || precipFetchInFlight) return;
+    precipFetchInFlight = true;
 
     const lat = currentLat;
     const lng = currentLng;
@@ -860,10 +862,14 @@
           time: Date.now()
         };
         lastRadarFetch = Date.now();
+        precipFetchInFlight = false;
         console.log(`Radar: grid loaded, max precip ${maxPrecip.toFixed(1)}mm`);
         drawRadar();
       })
-      .catch(err => { console.warn('Radar fetch failed:', err); });
+      .catch(err => {
+        precipFetchInFlight = false;
+        console.warn('Radar fetch failed:', err);
+      });
   }
 
   function updateRadar() {
