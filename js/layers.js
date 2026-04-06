@@ -237,7 +237,7 @@ const Layers = {
       'dumpStations', 'repairs', 'picnicSites', 'viewpoints', 'passes',
       'hostels', 'alpineHuts', 'hotels', 'guesthouses', 'cabins',
       'hospitals', 'atms', 'borderCrossings', 'restAreas', 'fords', 'ferries',
-      'waterSources', 'embassies',
+      'waterSources', 'embassies', 'cellTowers',
     ];
 
     for (const cat of overpassCategories) {
@@ -312,6 +312,7 @@ const Layers = {
       fords: 'Ford / River Crossing', ferries: 'Ferry Terminal',
       waterSources: props.natural === 'spring' ? 'Natural Spring' : 'Water Well',
       embassies: 'Embassy / Consulate',
+      cellTowers: 'Cell Tower',
     };
     const typeLabel = typeLabels[category] || category;
     html += `<div style="font-size:0.75em;color:#78909c;margin-bottom:8px">${typeLabel}</div>`;
@@ -379,6 +380,10 @@ const Layers = {
       if (props['payment:cash'] === 'yes') payments.push('Cash');
       if (props['payment:cards'] === 'yes' || props['payment:credit_cards'] === 'yes') payments.push('Card');
       if (payments.length) html += row('Payment', payments.join(', '));
+
+      // Cell coverage estimate from global tower data
+      const cellEst = this._estimateCellCoverage(lat, lon);
+      if (cellEst) html += cellEst;
     }
 
     // === Fuel-specific ===
@@ -445,6 +450,19 @@ const Layers = {
       const currencies = props.currency || props['currency:XCD'] || props['currency:USD'] || '';
       if (currencies) html += row('Currency', esc(currencies));
       if (props.cash_in === 'yes') html += `<div style="font-size:0.75em;color:#78909c">Accepts deposits</div>`;
+    }
+
+    // === Cell towers ===
+    if (category === 'cellTowers') {
+      if (props.operator) html += row('Operator', esc(props.operator));
+      const techs = [];
+      if (props['communication:gsm'] === 'yes') techs.push('2G');
+      if (props['communication:umts'] === 'yes') techs.push('3G');
+      if (props['communication:lte'] === 'yes') techs.push('4G');
+      if (props['communication:5g'] === 'yes' || props['communication:nr'] === 'yes') techs.push('5G');
+      if (techs.length) html += row('Technology', techs.join(' / '));
+      if (props.height) html += row('Height', props.height + 'm');
+      if (props.ref) html += row('Ref', esc(props.ref));
     }
 
     // === Rest area ===
@@ -525,6 +543,80 @@ const Layers = {
       html += `<a href="https://www.google.com/search?q=${encodeURIComponent(name + ' campsite reviews')}" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fas fa-star"></i> Reviews</a>`;
     }
     html += `</div>`;
+
+    html += `</div>`;
+    return html;
+  },
+
+  // Estimate cell coverage at a location from global Overpass tower data + static NZ data
+  _estimateCellCoverage(lat, lon) {
+    const maxDist = 20; // km — towers beyond this are too far
+    const towers = [];
+
+    // Check Overpass-loaded global cell towers
+    const globalGroup = this.groups['overpass-cellTowers'];
+    if (globalGroup) {
+      globalGroup.eachLayer(marker => {
+        const ll = marker.getLatLng();
+        const dist = Utils.distance(lat, lon, ll.lat, ll.lng);
+        if (dist <= maxDist) {
+          // Get operator from the popup content or stored data
+          const popup = marker.getPopup();
+          const content = popup ? popup.getContent() : '';
+          // Extract operator from data attribute if available
+          towers.push({ dist, lat: ll.lat, lon: ll.lng, source: 'osm' });
+        }
+      });
+    }
+
+    // Check static NZ cell tower data
+    const staticData = DataLoader.cache.cellTowers;
+    if (staticData?.features) {
+      for (const f of staticData.features) {
+        const [tLon, tLat] = f.geometry.coordinates;
+        const dist = Utils.distance(lat, lon, tLat, tLon);
+        if (dist <= maxDist) {
+          towers.push({
+            dist,
+            carrier: f.properties.carrier,
+            tech: f.properties.technology,
+            source: 'static',
+          });
+        }
+      }
+    }
+
+    if (towers.length === 0) return '';
+
+    // Estimate signal quality from nearest tower distance
+    const nearest = Math.min(...towers.map(t => t.dist));
+    let signal, signalLabel, signalColor;
+    if (nearest < 2) { signal = 'Excellent'; signalLabel = '4-5 bars'; signalColor = '#00c853'; }
+    else if (nearest < 5) { signal = 'Good'; signalLabel = '3-4 bars'; signalColor = '#00c853'; }
+    else if (nearest < 10) { signal = 'Fair'; signalLabel = '2-3 bars'; signalColor = '#ffab40'; }
+    else if (nearest < 15) { signal = 'Weak'; signalLabel = '1-2 bars'; signalColor = '#ff9800'; }
+    else { signal = 'Marginal'; signalLabel = '0-1 bars'; signalColor = '#ff5252'; }
+
+    let html = `<div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:8px;margin:8px 0">`;
+    html += `<div style="font-size:0.75em;color:#78909c;margin-bottom:4px"><i class="fas fa-signal"></i> Cell Coverage (est.)</div>`;
+    html += `<div style="display:flex;align-items:center;gap:8px">`;
+    html += `<span style="font-size:0.85em;font-weight:600;color:${signalColor}">${signal}</span>`;
+    html += `<span style="font-size:0.72em;color:#78909c">${signalLabel} · ${towers.length} tower${towers.length > 1 ? 's' : ''} within ${maxDist}km · nearest ${nearest.toFixed(1)}km</span>`;
+    html += `</div>`;
+
+    // Show carriers if we have that data (from static NZ data)
+    const carriers = {};
+    for (const t of towers) {
+      if (t.carrier) {
+        if (!carriers[t.carrier] || t.dist < carriers[t.carrier].dist) {
+          carriers[t.carrier] = { dist: t.dist, tech: t.tech };
+        }
+      }
+    }
+    const carrierNames = Object.keys(carriers);
+    if (carrierNames.length > 0) {
+      html += `<div style="font-size:0.7em;color:#b0bec5;margin-top:4px">${carrierNames.map(c => `${c} (${carriers[c].tech}, ${carriers[c].dist.toFixed(1)}km)`).join(' · ')}</div>`;
+    }
 
     html += `</div>`;
     return html;

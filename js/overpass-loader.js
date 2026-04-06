@@ -153,6 +153,12 @@ const OverpassLoader = {
       icon: 'faucet-drip',
       markerType: 'spring',
     },
+    cellTowers: {
+      label: 'Cell Towers',
+      query: '(node["man_made"="mast"]["tower:type"="communication"]({{bbox}});node["communication:mobile_phone"="yes"]({{bbox}});node["man_made"="tower"]["tower:type"="communication"]({{bbox}}););out center body;',
+      icon: 'signal',
+      markerType: 'tower',
+    },
     embassies: {
       label: 'Embassies & Consulates',
       query: '(node["office"="diplomatic"]({{bbox}});way["office"="diplomatic"]({{bbox}}););out center body;',
