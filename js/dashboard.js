@@ -195,6 +195,8 @@
         const pr = document.getElementById('dash-lean-peak-right');
         if (pl) { pl.setAttribute('x1', 0); pl.setAttribute('y1', 0); pl.setAttribute('x2', 0); pl.setAttribute('y2', 0); }
         if (pr) { pr.setAttribute('x1', 0); pr.setAttribute('y1', 0); pr.setAttribute('x2', 0); pr.setAttribute('y2', 0); }
+        const ml = document.getElementById('dash-max-lean');
+        if (ml) ml.textContent = '0';
       }, 90000);
 
       // Load saved target and wire up UI
@@ -773,6 +775,12 @@
     // Peak lean tick marks
     updatePeakTick('dash-lean-peak-left', peakLeanLeft, cx, cy, r, true);
     updatePeakTick('dash-lean-peak-right', peakLeanRight, cx, cy, r, false);
+
+    // Max lean number
+    const maxLeanEl = document.getElementById('dash-max-lean');
+    if (maxLeanEl) {
+      maxLeanEl.textContent = Math.round(Math.max(peakLeanLeft, peakLeanRight));
+    }
   }
 
   function updatePeakTick(id, peakAngle, cx, cy, r, isLeft) {
