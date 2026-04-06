@@ -941,16 +941,17 @@
   // Smooth gradient from transparent → blue → cyan → green → yellow → orange → red → magenta
   const PRECIP_COLORS = [
     { val: 0,    r: 0,   g: 0,   b: 0,   a: 0   },
-    { val: 0.05, r: 30,  g: 80,  b: 180, a: 0.3 },  // dark blue
-    { val: 0.2,  r: 40,  g: 130, b: 220, a: 0.5 },  // blue
-    { val: 0.5,  r: 30,  g: 180, b: 220, a: 0.6 },  // cyan
-    { val: 1.0,  r: 40,  g: 200, b: 100, a: 0.7 },  // green
-    { val: 2.0,  r: 160, g: 220, b: 40,  a: 0.75 }, // lime
-    { val: 4.0,  r: 240, g: 220, b: 30,  a: 0.8 },  // yellow
-    { val: 7.0,  r: 250, g: 160, b: 20,  a: 0.85 }, // orange
-    { val: 12,   r: 240, g: 50,  b: 30,  a: 0.9 },  // red
-    { val: 20,   r: 200, g: 30,  b: 160, a: 0.95 }, // magenta
-    { val: 40,   r: 160, g: 20,  b: 200, a: 1.0 },  // purple
+    { val: 0.02, r: 20,  g: 50,  b: 140, a: 0.5 },  // faint blue
+    { val: 0.1,  r: 30,  g: 90,  b: 200, a: 0.65 }, // dark blue
+    { val: 0.3,  r: 40,  g: 140, b: 230, a: 0.75 }, // blue
+    { val: 0.5,  r: 30,  g: 190, b: 230, a: 0.8 },  // cyan
+    { val: 1.0,  r: 40,  g: 210, b: 110, a: 0.85 }, // green
+    { val: 2.0,  r: 160, g: 230, b: 40,  a: 0.85 }, // lime
+    { val: 4.0,  r: 245, g: 225, b: 30,  a: 0.9 },  // yellow
+    { val: 7.0,  r: 255, g: 165, b: 20,  a: 0.9 },  // orange
+    { val: 12,   r: 245, g: 50,  b: 30,  a: 0.95 }, // red
+    { val: 20,   r: 210, g: 30,  b: 170, a: 1.0 },  // magenta
+    { val: 40,   r: 170, g: 20,  b: 210, a: 1.0 },  // purple
   ];
 
   function precipToColor(val) {
