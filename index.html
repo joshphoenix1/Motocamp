@@ -69,24 +69,42 @@
       <!-- Layers Tab -->
       <div id="tab-layers" class="tab-content active">
         <div class="sidebar-section">
-          <h3><i class="fas fa-campground"></i> Campsites</h3>
+          <h3><i class="fas fa-campground"></i> Camping</h3>
           <label class="layer-toggle">
             <input type="checkbox" data-layer="doc-campsites" checked />
             <span class="toggle-slider"></span>
             <span class="toggle-label">DOC Campsites</span>
-            <span class="badge badge-green">Free-$25</span>
+            <span class="badge badge-green">NZ</span>
           </label>
           <label class="layer-toggle">
             <input type="checkbox" data-layer="commercial-camps" checked />
             <span class="toggle-slider"></span>
             <span class="toggle-label">Holiday Parks</span>
-            <span class="badge badge-orange">Commercial</span>
+            <span class="badge badge-orange">NZ</span>
           </label>
           <label class="layer-toggle">
             <input type="checkbox" data-layer="freedom-camps" checked />
             <span class="toggle-slider"></span>
             <span class="toggle-label">Freedom Camping</span>
-            <span class="badge badge-purple">Community</span>
+            <span class="badge badge-purple">NZ</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-campsites" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Campsites</span>
+            <span class="badge badge-green">Global</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-accommodation" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Hostels & Lodges</span>
+            <span class="badge badge-green">Global</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-picnicSites" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Picnic Sites</span>
+            <span class="badge badge-green">Global</span>
           </label>
         </div>
 
@@ -95,35 +113,60 @@
             <input type="checkbox" id="cell-all-toggle" />
             <span class="toggle-slider"></span>
             <span class="toggle-label"><i class="fas fa-signal" style="margin-right:4px"></i> Cell Coverage</span>
+            <span class="badge badge-purple">NZ</span>
           </label>
         </div>
 
         <div class="sidebar-section">
           <h3><i class="fas fa-concierge-bell"></i> Services</h3>
           <label class="layer-toggle">
-            <input type="checkbox" data-layer="toilets" />
-            <span class="toggle-slider"></span>
-            <span class="toggle-label">Toilets</span>
-          </label>
-          <label class="layer-toggle">
-            <input type="checkbox" data-layer="water" />
-            <span class="toggle-slider"></span>
-            <span class="toggle-label">Drinking Water</span>
-          </label>
-          <label class="layer-toggle">
-            <input type="checkbox" data-layer="shelters" />
-            <span class="toggle-slider"></span>
-            <span class="toggle-label">Shelters</span>
-          </label>
-          <label class="layer-toggle">
-            <input type="checkbox" data-layer="fuel" />
+            <input type="checkbox" data-layer="overpass-fuel" />
             <span class="toggle-slider"></span>
             <span class="toggle-label">Fuel Stations</span>
           </label>
           <label class="layer-toggle">
-            <input type="checkbox" data-layer="shops" />
+            <input type="checkbox" data-layer="overpass-water" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Drinking Water</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-toilets" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Toilets</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-shelters" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Shelters & Huts</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-shops" />
             <span class="toggle-slider"></span>
             <span class="toggle-label">Shops / Supermarkets</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-dumpStations" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Dump Stations</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-repairs" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Repair / Mechanics</span>
+          </label>
+        </div>
+
+        <div class="sidebar-section">
+          <h3><i class="fas fa-mountain-sun"></i> Points of Interest</h3>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-viewpoints" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Viewpoints</span>
+          </label>
+          <label class="layer-toggle">
+            <input type="checkbox" data-layer="overpass-passes" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Mountain Passes</span>
           </label>
         </div>
 
@@ -262,7 +305,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <p>Data: DOC, OSM, Open-Meteo, OpenCellID</p>
+      <p>Data: OSM, Open-Meteo, OpenCellID, DOC</p>
       <p>&copy; 2026 MotoCamp</p>
     </div>
   </aside>
@@ -437,6 +480,7 @@
   <script src="js/utils.js?v=20260406d"></script>
   <script src="js/data-loader.js?v=20260406d"></script>
   <script src="js/weather.js?v=20260406d"></script>
+  <script src="js/overpass-loader.js?v=20260406d"></script>
   <script src="js/layers.js?v=20260406d"></script>
   <script src="js/gravel-roads.js?v=20260406d"></script>
   <script src="js/route.js?v=20260406d"></script>

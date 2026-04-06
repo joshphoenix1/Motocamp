@@ -655,6 +655,12 @@ body {
 .marker-shelter { background: #795548; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-fuel { background: #f44336; color: #fff; width: 16px; height: 16px; font-size: 8px; }
 .marker-shop { background: #ff9800; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-dump { background: #546e7a; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-repair { background: #e65100; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-picnic { background: #66bb6a; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-viewpoint { background: #7e57c2; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-pass { background: #5d4037; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-accommodation { background: #1e88e5; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-tower { width: 12px; height: 12px; font-size: 6px; }
 .marker-tower.spark { background: var(--spark-color); color: #000; }
 .marker-tower.vodafone { background: var(--vodafone-color); color: #fff; }

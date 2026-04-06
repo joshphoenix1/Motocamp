@@ -9,6 +9,7 @@ const Layers = {
     this.createCampsiteLayers(data);
     this.createAmenityLayers(data);
     this.createCellTowerLayers(data);
+    this.setupOverpassLayers();
     this.setupToggles();
     this.setupFilters();
     this.setupWeatherControls();
@@ -222,10 +223,118 @@ const Layers = {
     });
   },
 
+  // ===== Overpass-driven global layers =====
+  setupOverpassLayers() {
+    if (typeof OverpassLoader === 'undefined') return;
+    OverpassLoader.init(this.map);
+
+    // Track features we've already added (by OSM id) to avoid duplicates
+    this._overpassSeen = {};
+
+    // Create cluster groups for each Overpass category
+    const overpassCategories = [
+      'campsites', 'fuel', 'water', 'toilets', 'shops', 'shelters',
+      'dumpStations', 'repairs', 'picnicSites', 'viewpoints', 'passes', 'accommodation',
+    ];
+
+    for (const cat of overpassCategories) {
+      const meta = OverpassLoader.categories[cat];
+      if (!meta) continue;
+      const key = 'overpass-' + cat;
+      this._overpassSeen[cat] = new Set();
+      this.groups[key] = L.markerClusterGroup({
+        maxClusterRadius: 35,
+        disableClusteringAtZoom: 14,
+        showCoverageOnHover: false,
+      });
+    }
+
+    // Listen for new data from Overpass
+    OverpassLoader.onData((category, features) => {
+      const key = 'overpass-' + category;
+      const group = this.groups[key];
+      const seen = this._overpassSeen[category];
+      if (!group || !seen) return;
+
+      const meta = OverpassLoader.categories[category];
+      for (const f of features) {
+        const id = f.properties._osm_id;
+        if (seen.has(id)) continue;
+        seen.add(id);
+
+        const [lon, lat] = f.geometry.coordinates;
+        const props = f.properties;
+        const name = props.name || meta.label;
+
+        const marker = L.marker([lat, lon], {
+          icon: Utils.createMarker(meta.markerType, meta.icon),
+        });
+
+        // Build popup based on available tags
+        let popup = `<div style="min-width:150px"><strong>${name}</strong>`;
+        if (props.operator) popup += `<br><span style="font-size:0.8em">Operator: ${props.operator}</span>`;
+        if (props.opening_hours) popup += `<br><span style="font-size:0.8em">Hours: ${props.opening_hours}</span>`;
+        if (props.fee === 'no') popup += `<br><span style="font-size:0.8em;color:var(--accent)">Free</span>`;
+        else if (props.fee === 'yes' || props.charge) popup += `<br><span style="font-size:0.8em">Fee: ${props.charge || 'yes'}</span>`;
+        if (props.website) popup += `<br><a href="${props.website}" target="_blank" style="font-size:0.8em">Website</a>`;
+        if (props.phone) popup += `<br><span style="font-size:0.8em">Phone: ${props.phone}</span>`;
+        if (props.description) popup += `<br><span style="font-size:0.8em">${props.description}</span>`;
+
+        // Campsite-specific tags
+        if (category === 'campsites') {
+          const amenities = [];
+          if (props.drinking_water === 'yes') amenities.push('Water');
+          if (props.toilets === 'yes') amenities.push('Toilets');
+          if (props.shower === 'yes') amenities.push('Showers');
+          if (props.power_supply === 'yes') amenities.push('Power');
+          if (props.internet_access === 'yes' || props.internet_access === 'wlan') amenities.push('WiFi');
+          if (props.sanitary_dump_station === 'yes') amenities.push('Dump');
+          if (props.tents === 'yes') amenities.push('Tents');
+          if (props.caravans === 'yes') amenities.push('Caravans');
+          if (amenities.length) popup += `<br><span style="font-size:0.75em;color:var(--text-secondary)">${amenities.join(' · ')}</span>`;
+          if (props.capacity) popup += `<br><span style="font-size:0.75em">${props.capacity} sites</span>`;
+        }
+
+        // Fuel-specific
+        if (category === 'fuel') {
+          const fuels = [];
+          if (props['fuel:diesel'] === 'yes') fuels.push('Diesel');
+          if (props['fuel:octane_95'] === 'yes' || props['fuel:octane_91'] === 'yes') fuels.push('Petrol');
+          if (props['fuel:lpg'] === 'yes') fuels.push('LPG');
+          if (fuels.length) popup += `<br><span style="font-size:0.75em">${fuels.join(' · ')}</span>`;
+        }
+
+        // Pass/viewpoint elevation
+        if ((category === 'passes' || category === 'viewpoints') && props.ele) {
+          popup += `<br><span style="font-size:0.8em">Elevation: ${props.ele}m</span>`;
+        }
+
+        popup += '</div>';
+        marker.bindPopup(popup);
+        group.addLayer(marker);
+      }
+    });
+  },
+
   setupToggles() {
     document.querySelectorAll('[data-layer]').forEach(checkbox => {
       checkbox.addEventListener('change', (e) => {
         const layerKey = e.target.dataset.layer;
+
+        // Handle Overpass-backed layers
+        if (layerKey.startsWith('overpass-')) {
+          const category = layerKey.replace('overpass-', '');
+          const group = this.groups[layerKey];
+          if (e.target.checked) {
+            if (group) this.map.addLayer(group);
+            OverpassLoader.enableCategory(category);
+          } else {
+            if (group) this.map.removeLayer(group);
+            OverpassLoader.disableCategory(category);
+          }
+          return;
+        }
+
         const group = this.groups[layerKey];
         if (!group) return;
 
@@ -606,6 +715,18 @@ const Layers = {
         else if (sub === 'toilet') result.toilets++;
       }
     }
+
+    // Also count Overpass-loaded markers if available
+    const overpassMap = { campsites: 'overpass-campsites', fuel: 'overpass-fuel', water: 'overpass-water', shops: 'overpass-shops', toilets: 'overpass-toilets' };
+    for (const [type, key] of Object.entries(overpassMap)) {
+      const group = this.groups[key];
+      if (!group) continue;
+      group.eachLayer(marker => {
+        const ll = marker.getLatLng();
+        if (Utils.distance(lat, lon, ll.lat, ll.lng) <= radius) result[type]++;
+      });
+    }
+
     return result;
   },
 

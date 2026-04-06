@@ -113,6 +113,7 @@ const DataLoader = {
   // Clear cache (for data updates)
   async clearCache() {
     await caches.delete(this.CACHE_NAME);
+    if (typeof OverpassLoader !== 'undefined') OverpassLoader.clearCache();
     console.log('[Cache CLEARED]');
   }
 };
