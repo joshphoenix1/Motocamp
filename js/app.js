@@ -3,16 +3,24 @@
   'use strict';
 
   // ===== Initialize Map =====
+  // Home position: updated by geolocation, used by reset button
+  let homePosition = { center: [20, 0], zoom: 3 };
+
   const map = L.map('map', {
-    center: [-41.5, 172.5],
-    zoom: 6,
-    minZoom: 4,
+    center: homePosition.center,
+    zoom: homePosition.zoom,
+    minZoom: 2,
     maxZoom: 18,
     zoomControl: false,
-    maxBounds: [[-50, 160], [-33, 185]],
-    maxBoundsViscosity: 0.8
   });
   window.map = map;
+
+  // Try to center on user's location
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude, longitude } = pos.coords;
+    homePosition = { center: [latitude, longitude], zoom: 10 };
+    map.flyTo(homePosition.center, homePosition.zoom, { duration: 1.5 });
+  }, () => {}, { enableHighAccuracy: false, timeout: 5000 });
 
   // Add base tile layer immediately so the map shows
   // Store reference so Layers.setupBasemapSelector can remove it specifically
@@ -66,8 +74,10 @@
     searchClear.classList.remove('hidden');
 
     try {
+      const b = map.getBounds();
+      const viewbox = `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}&bounded=0`;
       const resp = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=nz&limit=8`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${viewbox}&limit=8`
       );
       const results = await resp.json();
 
@@ -172,7 +182,7 @@
 
   // Reset view
   document.getElementById('btn-reset').addEventListener('click', () => {
-    map.flyTo([-41.5, 172.5], 6, { duration: 1.5 });
+    map.flyTo(homePosition.center, homePosition.zoom, { duration: 1.5 });
   });
 
   // Fullscreen
@@ -435,5 +445,5 @@
   // ===== Health Check =====
   HealthCheck.start(map);
 
-  console.log('MotoCamp NZ initialized successfully!');
+  console.log('MotoCamp initialized successfully!');
 })();

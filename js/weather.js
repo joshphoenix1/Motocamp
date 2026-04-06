@@ -14,9 +14,9 @@ const Weather = {
   particles: [],
   windGrid: null,
 
-  // Coarse grid for wind vectors only (~90 points, 2 API calls)
-  windGridLats: (() => { const a = []; for (let lat = -47; lat <= -34; lat += 1.5) a.push(lat); return a; })(),
-  windGridLons: (() => { const a = []; for (let lon = 165; lon <= 179; lon += 1.5) a.push(lon); return a; })(),
+  // Wind grid arrays — built dynamically from map viewport
+  windGridLats: [],
+  windGridLons: [],
 
   // OWM weather map tile layer names
   owmTiles: {
@@ -26,8 +26,30 @@ const Weather = {
     clouds: 'clouds_new',
   },
 
+  // Build wind grid from current map viewport, capped at ~120 points
+  buildWindGrid() {
+    if (!this.map) return;
+    const bounds = this.map.getBounds();
+    const south = Math.floor(bounds.getSouth());
+    const north = Math.ceil(bounds.getNorth());
+    const west = Math.floor(bounds.getWest());
+    const east = Math.ceil(bounds.getEast());
+
+    // Scale step size so we never exceed ~120 points
+    const latRange = north - south;
+    const lonRange = east - west;
+    const targetPoints = 120;
+    const step = Math.max(1.5, Math.ceil(Math.sqrt(latRange * lonRange / targetPoints) * 2) / 2);
+
+    this.windGridLats = [];
+    this.windGridLons = [];
+    for (let lat = south; lat <= north; lat += step) this.windGridLats.push(lat);
+    for (let lon = west; lon <= east; lon += step) this.windGridLons.push(lon);
+  },
+
   // Fetch coarse wind grid from Open-Meteo (for particle animation)
   async fetchGridWeather() {
+    this.buildWindGrid();
     const points = [];
     for (const lat of this.windGridLats) {
       for (const lon of this.windGridLons) {
@@ -46,7 +68,7 @@ const Weather = {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${latStr}&longitude=${lonStr}` +
           '&hourly=wind_speed_10m,wind_direction_10m' +
-          '&wind_speed_unit=ms&timezone=Pacific%2FAuckland&forecast_days=7';
+          '&wind_speed_unit=ms&timezone=auto&forecast_days=7';
 
         const resp = await fetch(url);
         const data = await resp.json();
@@ -151,9 +173,18 @@ const Weather = {
       this.resizeCanvas();
       this.startWindAnimation();
 
-      // Re-sync canvas on map move/resize
+      // Re-sync canvas on map move/resize, rebuild wind grid for new viewport
       if (!this._boundMove) {
-        this._boundMove = () => { this.resizeCanvas(); this.resetParticles(); };
+        let rebuildTimer = null;
+        this._boundMove = () => {
+          this.resizeCanvas();
+          this.resetParticles();
+          // Debounced wind grid rebuild for the new viewport
+          clearTimeout(rebuildTimer);
+          rebuildTimer = setTimeout(async () => {
+            await this.fetchGridWeather();
+          }, 2000);
+        };
         this._boundResize = () => this.resizeCanvas();
         map.on('moveend', this._boundMove);
         map.on('resize', this._boundResize);
@@ -330,7 +361,7 @@ const Weather = {
         'weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,uv_index' +
         '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,' +
         'wind_speed_10m_max,sunrise,sunset,uv_index_max' +
-        '&wind_speed_unit=ms&timezone=Pacific%2FAuckland&forecast_days=7';
+        '&wind_speed_unit=ms&timezone=auto&forecast_days=7';
 
       const resp = await fetch(url);
       return await resp.json();

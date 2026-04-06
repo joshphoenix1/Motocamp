@@ -1,7 +1,7 @@
 {
-  "name": "MotoCamp NZ",
+  "name": "MotoCamp",
   "short_name": "MotoCamp",
-  "description": "Ride. Camp. Explore. — Motorcycle camping map for New Zealand",
+  "description": "Ride. Camp. Explore. — Motorcycle camping map",
   "start_url": "/",
   "display": "browser",
   "background_color": "#0a0f1a",

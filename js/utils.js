@@ -52,7 +52,10 @@ const Utils = {
   },
 
   createTowerMarker(carrier) {
-    const cls = carrier === 'Spark' ? 'spark' : carrier === 'One NZ' ? 'vodafone' : 'twodeg';
+    const carriers = Layers._cellCarriers || [];
+    const idx = carriers.indexOf(carrier);
+    const cssClasses = ['spark', 'vodafone', 'twodeg', 'carrier-3', 'carrier-4', 'carrier-5'];
+    const cls = idx >= 0 ? cssClasses[idx] || 'carrier-' + idx : 'carrier-0';
     return L.divIcon({
       className: `custom-marker marker-tower ${cls}`,
       html: '<i class="fas fa-signal"></i>',

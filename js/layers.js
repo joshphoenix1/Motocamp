@@ -162,57 +162,64 @@ const Layers = {
   },
 
   createCellTowerLayers(data) {
-    // Build heatmap data arrays per carrier
-    const heatData = {
-      'cell-spark': [],
-      'cell-vodafone': [],
-      'cell-2degrees': [],
-    };
+    // Discover carriers dynamically from data
+    this._cellCarriers = [];
+    if (!data.cellTowers?.features?.length) return;
 
-    if (data.cellTowers?.features) {
-      for (const f of data.cellTowers.features) {
-        const [lon, lat] = f.geometry.coordinates;
-        const props = f.properties;
+    const carrierSet = new Set();
+    for (const f of data.cellTowers.features) {
+      if (f.properties.carrier) carrierSet.add(f.properties.carrier);
+    }
+    this._cellCarriers = [...carrierSet];
 
-        // Intensity based on technology and range
-        // Higher range = more coverage spread, stronger presence
-        const techBase = props.technology === '4G' ? 0.9 :
-                         props.technology === '3G' ? 0.6 :
-                         props.technology === '5G' ? 1.0 : 0.4;
-        const rangeBoost = Math.min((props.range || 5000) / 15000, 1.0);
-        const intensity = techBase * (0.5 + 0.5 * rangeBoost);
+    // Build heatmap data per carrier
+    const heatData = {};
+    for (const carrier of this._cellCarriers) {
+      heatData['cell-' + carrier] = [];
+    }
 
-        const key = props.carrier === 'Spark' ? 'cell-spark' :
-                    props.carrier === 'One NZ' ? 'cell-vodafone' : 'cell-2degrees';
+    for (const f of data.cellTowers.features) {
+      const [lon, lat] = f.geometry.coordinates;
+      const props = f.properties;
 
-        if (heatData[key]) {
-          heatData[key].push([lat, lon, intensity]);
-        }
+      const techBase = props.technology === '4G' ? 0.9 :
+                       props.technology === '3G' ? 0.6 :
+                       props.technology === '5G' ? 1.0 : 0.4;
+      const rangeBoost = Math.min((props.range || 5000) / 15000, 1.0);
+      const intensity = techBase * (0.5 + 0.5 * rangeBoost);
+
+      const key = 'cell-' + props.carrier;
+      if (heatData[key]) {
+        heatData[key].push([lat, lon, intensity]);
       }
     }
 
-    // Soft, modern gradients — transparent edges fading to gentle cores
-    const gradients = {
-      'cell-spark': { 0.1: 'rgba(255,220,100,0)', 0.3: 'rgba(255,200,60,0.15)', 0.5: 'rgba(245,180,40,0.3)', 0.7: 'rgba(230,160,30,0.45)', 1.0: 'rgba(210,145,20,0.6)' },
-      'cell-vodafone': { 0.1: 'rgba(255,120,140,0)', 0.3: 'rgba(240,90,110,0.15)', 0.5: 'rgba(220,70,90,0.3)', 0.7: 'rgba(200,55,75,0.45)', 1.0: 'rgba(180,40,60,0.6)' },
-      'cell-2degrees': { 0.1: 'rgba(100,200,255,0)', 0.3: 'rgba(70,175,235,0.15)', 0.5: 'rgba(50,150,210,0.3)', 0.7: 'rgba(35,125,190,0.45)', 1.0: 'rgba(25,100,170,0.6)' },
-    };
+    // Color palette for up to 6 carriers
+    const gradientPalette = [
+      { 0.1: 'rgba(255,220,100,0)', 0.3: 'rgba(255,200,60,0.15)', 0.5: 'rgba(245,180,40,0.3)', 0.7: 'rgba(230,160,30,0.45)', 1.0: 'rgba(210,145,20,0.6)' },
+      { 0.1: 'rgba(255,120,140,0)', 0.3: 'rgba(240,90,110,0.15)', 0.5: 'rgba(220,70,90,0.3)', 0.7: 'rgba(200,55,75,0.45)', 1.0: 'rgba(180,40,60,0.6)' },
+      { 0.1: 'rgba(100,200,255,0)', 0.3: 'rgba(70,175,235,0.15)', 0.5: 'rgba(50,150,210,0.3)', 0.7: 'rgba(35,125,190,0.45)', 1.0: 'rgba(25,100,170,0.6)' },
+      { 0.1: 'rgba(160,255,160,0)', 0.3: 'rgba(100,220,100,0.15)', 0.5: 'rgba(60,190,60,0.3)', 0.7: 'rgba(40,160,40,0.45)', 1.0: 'rgba(30,130,30,0.6)' },
+      { 0.1: 'rgba(200,160,255,0)', 0.3: 'rgba(170,120,240,0.15)', 0.5: 'rgba(140,90,220,0.3)', 0.7: 'rgba(120,70,200,0.45)', 1.0: 'rgba(100,50,180,0.6)' },
+      { 0.1: 'rgba(255,200,160,0)', 0.3: 'rgba(240,170,120,0.15)', 0.5: 'rgba(220,140,90,0.3)', 0.7: 'rgba(200,120,70,0.45)', 1.0: 'rgba(180,100,50,0.6)' },
+    ];
 
-    for (const [key, points] of Object.entries(heatData)) {
-      const heat = L.heatLayer(points, {
+    this._cellCarriers.forEach((carrier, i) => {
+      const key = 'cell-' + carrier;
+      const heat = L.heatLayer(heatData[key], {
         radius: 50,
         blur: 40,
         maxZoom: 13,
         max: 1.0,
         minOpacity: 0.02,
-        gradient: gradients[key]
+        gradient: gradientPalette[i % gradientPalette.length]
       });
       heat.on('add', function() {
         const el = this._canvas || this._container;
         if (el) el.style.opacity = '0.55';
       });
       this.groups[key] = heat;
-    }
+    });
   },
 
   setupToggles() {
@@ -234,7 +241,7 @@ const Layers = {
     const cellAllToggle = document.getElementById('cell-all-toggle');
     if (cellAllToggle) {
       cellAllToggle.addEventListener('change', (e) => {
-        const cellKeys = ['cell-spark', 'cell-vodafone', 'cell-2degrees'];
+        const cellKeys = (this._cellCarriers || []).map(c => 'cell-' + c);
         cellKeys.forEach(key => {
           const group = this.groups[key];
           if (!group) return;
@@ -312,6 +319,7 @@ const Layers = {
             const btn = e.target.closest('.layer-toggle');
             const origLabel = btn.querySelector('.toggle-label').textContent;
             btn.querySelector('.toggle-label').textContent = 'Loading weather...';
+            Weather.map = this.map;
             await Weather.fetchGridWeather();
             btn.querySelector('.toggle-label').textContent = origLabel;
           }
@@ -494,7 +502,7 @@ const Layers = {
               : facilities.fee || props._enriched_fee || props.charge || ''
           }${
             !facilities.fee && !props._enriched_fee && !props.charge && props.fee !== 'no'
-              ? '<span style="color:var(--text-muted);font-size:0.75rem">Unknown — <a href="https://www.google.com/search?q=' + encodeURIComponent((props.name || 'campsite') + ' NZ campsite price') + '" target="_blank" style="color:var(--accent)">search</a></span>'
+              ? '<span style="color:var(--text-muted);font-size:0.75rem">Unknown — <a href="https://www.google.com/search?q=' + encodeURIComponent((props.name || 'campsite') + ' campsite price') + '" target="_blank" style="color:var(--accent)">search</a></span>'
               : ''
           }${
             facilities.fee && facilities.fee.includes('est.') ? ' <span style="color:var(--text-muted);font-size:0.7rem">(estimated)</span>' : ''
@@ -545,13 +553,13 @@ const Layers = {
         <button class="btn btn-sm" onclick="RoutePlanner.addAsWaypoint(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')">
           <i class="fas fa-plus"></i> Add to Route
         </button>
-        <a href="${props.website || props.url || props['contact:website'] || props.URL || (operator === 'Department of Conservation (DOC)' ? 'https://www.doc.govt.nz/search?q=' + encodeURIComponent(name) : 'https://www.google.com/search?q=' + encodeURIComponent(name + ' NZ campsite'))}" target="_blank" class="btn btn-sm">
+        <a href="${props.website || props.url || props['contact:website'] || props.URL || (operator === 'Department of Conservation (DOC)' ? 'https://www.doc.govt.nz/search?q=' + encodeURIComponent(name) : 'https://www.google.com/search?q=' + encodeURIComponent(name + ' campsite'))}" target="_blank" class="btn btn-sm">
           <i class="fas fa-globe"></i> Website
         </a>
         <a href="https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lon},15z" target="_blank" class="btn btn-sm">
           <i class="fab fa-google"></i> Google Maps
         </a>
-        <a href="https://www.google.com/search?q=${encodeURIComponent(name + ' campsite NZ reviews')}" target="_blank" class="btn btn-sm">
+        <a href="https://www.google.com/search?q=${encodeURIComponent(name + ' campsite reviews')}" target="_blank" class="btn btn-sm">
           <i class="fas fa-star"></i> Reviews
         </a>
       </div>
@@ -603,49 +611,47 @@ const Layers = {
 
   findCellCoverage(lat, lon) {
     const data = DataLoader.cache.cellTowers;
-    if (!data?.features) return { spark: 0, vodafone: 0, twodeg: 0 };
+    const carriers = this._cellCarriers || [];
+    if (!data?.features || carriers.length === 0) return [];
 
-    const result = { spark: { dist: Infinity, tech: '' }, vodafone: { dist: Infinity, tech: '' }, twodeg: { dist: Infinity, tech: '' } };
+    // Track nearest tower per carrier
+    const nearest = {};
+    for (const c of carriers) nearest[c] = { dist: Infinity, tech: '' };
 
     for (const f of data.features) {
       const [tLon, tLat] = f.geometry.coordinates;
       const dist = Utils.distance(lat, lon, tLat, tLon);
-
       const carrier = f.properties.carrier;
-      const key = carrier === 'Spark' ? 'spark' : carrier === 'One NZ' ? 'vodafone' : 'twodeg';
-
-      if (dist < result[key].dist) {
-        result[key].dist = dist;
-        // NZ only has 4G/5G networks now — legacy 2G/3G bands refarmed to 4G
-        const rawTech = f.properties.technology;
-        result[key].tech = (rawTech === '5G') ? '5G' : '4G';
+      if (nearest[carrier] && dist < nearest[carrier].dist) {
+        nearest[carrier].dist = dist;
+        nearest[carrier].tech = f.properties.technology === '5G' ? '5G' : '4G';
       }
     }
 
-    // Convert distance to signal strength (0-100)
     const distToSignal = (dist, tech) => {
       const maxRange = tech === '5G' ? 3 : 15;
       if (dist > maxRange * 2) return 0;
       return Math.max(0, Math.round(100 * (1 - dist / (maxRange * 2))));
     };
 
-    return {
-      spark: { signal: distToSignal(result.spark.dist, result.spark.tech), tech: result.spark.tech, dist: result.spark.dist },
-      vodafone: { signal: distToSignal(result.vodafone.dist, result.vodafone.tech), tech: result.vodafone.tech, dist: result.vodafone.dist },
-      twodeg: { signal: distToSignal(result.twodeg.dist, result.twodeg.tech), tech: result.twodeg.tech, dist: result.twodeg.dist },
-    };
+    return carriers.map((name, i) => ({
+      name,
+      index: i,
+      signal: distToSignal(nearest[name].dist, nearest[name].tech),
+      tech: nearest[name].tech,
+      dist: nearest[name].dist,
+    }));
   },
 
   buildCellCoverageHTML(info) {
-    const row = (name, data, cls) => `
-      <div class="cell-bar-container">
-        <span class="cell-carrier">${name}</span>
-        <div class="cell-bar"><div class="cell-bar-fill ${cls}" style="width:${data.signal}%"></div></div>
-        <span class="cell-tech">${data.signal > 0 ? data.tech : 'None'}</span>
-      </div>`;
+    if (!info || info.length === 0) return '<span style="color:var(--text-muted);font-size:0.8rem">No cell data available</span>';
 
-    return row('Spark', info.spark, 'spark') +
-           row('One NZ', info.vodafone, 'vodafone') +
-           row('2degrees', info.twodeg, 'twodeg');
+    const cssClasses = ['spark', 'vodafone', 'twodeg', 'carrier-3', 'carrier-4', 'carrier-5'];
+    return info.map(c => `
+      <div class="cell-bar-container">
+        <span class="cell-carrier">${c.name}</span>
+        <div class="cell-bar"><div class="cell-bar-fill ${cssClasses[c.index] || 'carrier-' + c.index}" style="width:${c.signal}%"></div></div>
+        <span class="cell-tech">${c.signal > 0 ? c.tech : 'None'}</span>
+      </div>`).join('');
   }
 };

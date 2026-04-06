@@ -63,8 +63,10 @@ const RoutePlanner = {
       }
 
       try {
+        const b = this.map.getBounds();
+        const viewbox = `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}&bounded=0`;
         const resp = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=nz&limit=5`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${viewbox}&limit=5`
         );
         const data = await resp.json();
         if (resultsDiv && data.length) {
@@ -123,8 +125,10 @@ const RoutePlanner = {
       }
 
       try {
+        const b = this.map.getBounds();
+        const viewbox = `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}&bounded=0`;
         const resp = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=nz&limit=5`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${viewbox}&limit=5`
         );
         const data = await resp.json();
         if (data.length) {
@@ -336,7 +340,7 @@ const RoutePlanner = {
 
       if (wxData?.daily) {
         const date = new Date(wxData.daily.time[dayIdx]);
-        html += `<span>${date.toLocaleDateString('en-NZ', { weekday: 'short', month: 'short', day: 'numeric' })}</span>`;
+        html += `<span>${date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>`;
       }
       html += '</div>';
 
@@ -804,7 +808,7 @@ const RoutePlanner = {
     }
 
     list.innerHTML = saved.map((route, i) => {
-      const date = new Date(route.timestamp).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+      const date = new Date(route.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
       const startShort = route.start.name.split(',')[0];
       const endShort = route.end.name.split(',')[0];
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
