@@ -620,7 +620,7 @@
     }
   }
 
-  const LEAN_EMA_ALPHA = 0.07; // smoothing — lower = smoother (less jitter, more lag)
+  const LEAN_EMA_ALPHA = 0.18; // smoothing — higher = more responsive, lower = smoother
   let leanCalibSamples = [];
   const LEAN_CALIB_COUNT = 30; // auto-calibrate from first N samples (~0.5s at 60Hz)
 
@@ -662,8 +662,8 @@
     // Double EMA smoothing (two passes for less jitter, slightly more lag)
     currentLean = currentLean + LEAN_EMA_ALPHA * (calibrated - currentLean);
 
-    // Deadband: suppress display jitter below 2°
-    const displayLean = Math.abs(currentLean) < 2 ? 0 : currentLean;
+    // Deadband: suppress display jitter below 3°
+    const displayLean = Math.abs(currentLean) < 3 ? 0 : currentLean;
 
     // Track peaks (use raw smoothed, not deadbanded)
     if (currentLean < -1 && Math.abs(currentLean) > peakLeanLeft) peakLeanLeft = Math.abs(currentLean);
