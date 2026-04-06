@@ -583,27 +583,56 @@ const RoutePlanner = {
       ctx.fillText(Math.round(d) + 'km', x, H - 4);
     }
 
+    // Smooth elevation data (moving average, window scales with point count)
+    const smoothWindow = Math.max(3, Math.floor(elevations.length / 30));
+    const smoothed = elevations.map((_, i) => {
+      const half = Math.floor(smoothWindow / 2);
+      const start = Math.max(0, i - half);
+      const end = Math.min(elevations.length - 1, i + half);
+      let sum = 0, count = 0;
+      for (let j = start; j <= end; j++) { sum += elevations[j]; count++; }
+      return sum / count;
+    });
+
+    // Helper: monotonic cubic spline control points for smooth curves
+    const splinePoints = [];
+    for (let i = 0; i < distances.length; i++) {
+      splinePoints.push({ x: toX(distances[i]), y: toY(smoothed[i]) });
+    }
+
+    const drawSmooth = (points) => {
+      if (points.length < 2) return;
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const cpx = (prev.x + curr.x) / 2;
+        ctx.bezierCurveTo(cpx, prev.y, cpx, curr.y, curr.x, curr.y);
+      }
+    };
+
     // Fill gradient
     const grad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + plotH);
     grad.addColorStop(0, 'rgba(0, 200, 83, 0.35)');
     grad.addColorStop(1, 'rgba(0, 200, 83, 0.02)');
 
     ctx.beginPath();
-    ctx.moveTo(toX(distances[0]), PAD.top + plotH);
-    for (let i = 0; i < distances.length; i++) {
-      ctx.lineTo(toX(distances[i]), toY(elevations[i]));
+    ctx.moveTo(splinePoints[0].x, PAD.top + plotH);
+    ctx.lineTo(splinePoints[0].x, splinePoints[0].y);
+    for (let i = 1; i < splinePoints.length; i++) {
+      const prev = splinePoints[i - 1];
+      const curr = splinePoints[i];
+      const cpx = (prev.x + curr.x) / 2;
+      ctx.bezierCurveTo(cpx, prev.y, cpx, curr.y, curr.x, curr.y);
     }
-    ctx.lineTo(toX(distances[distances.length - 1]), PAD.top + plotH);
+    ctx.lineTo(splinePoints[splinePoints.length - 1].x, PAD.top + plotH);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
 
     // Line
     ctx.beginPath();
-    ctx.moveTo(toX(distances[0]), toY(elevations[0]));
-    for (let i = 1; i < distances.length; i++) {
-      ctx.lineTo(toX(distances[i]), toY(elevations[i]));
-    }
+    drawSmooth(splinePoints);
     ctx.strokeStyle = '#00c853';
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';

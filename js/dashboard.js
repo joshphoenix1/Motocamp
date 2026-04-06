@@ -1200,8 +1200,19 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
 
-    const elevs = sliceIdx.map(i => elData.elevations[i]);
+    const rawElevs = sliceIdx.map(i => elData.elevations[i]);
     const dists = sliceIdx.map(i => elData.distances[i] - startDist);
+
+    // Smooth elevations (moving average)
+    const sw = Math.max(3, Math.floor(rawElevs.length / 20));
+    const elevs = rawElevs.map((_, i) => {
+      const half = Math.floor(sw / 2);
+      const s = Math.max(0, i - half), e = Math.min(rawElevs.length - 1, i + half);
+      let sum = 0, cnt = 0;
+      for (let j = s; j <= e; j++) { sum += rawElevs[j]; cnt++; }
+      return sum / cnt;
+    });
+
     const minE = Math.min(...elevs) - 10;
     const maxE = Math.max(...elevs) + 10;
     const rangeE = maxE - minE || 1;
@@ -1213,28 +1224,32 @@
     const toX = d => pad.left + (d / maxDist) * plotW;
     const toY = e => pad.top + plotH - ((e - minE) / rangeE) * plotH;
 
+    // Build spline points
+    const pts = elevs.map((e, i) => ({ x: toX(dists[i]), y: toY(e) }));
+    const drawSmooth = (points) => {
+      if (points.length < 2) return;
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        const cpx = (points[i - 1].x + points[i].x) / 2;
+        ctx.bezierCurveTo(cpx, points[i - 1].y, cpx, points[i].y, points[i].x, points[i].y);
+      }
+    };
+
     // Fill area
     ctx.beginPath();
-    ctx.moveTo(toX(dists[0]), h);
-    ctx.lineTo(toX(dists[0]), toY(elevs[0]));
-    for (let i = 1; i < elevs.length; i++) {
-      ctx.lineTo(toX(dists[i]), toY(elevs[i]));
-    }
-    ctx.lineTo(toX(dists[dists.length - 1]), h);
+    ctx.moveTo(pts[0].x, h);
+    drawSmooth(pts);
+    ctx.lineTo(pts[pts.length - 1].x, h);
     ctx.closePath();
     ctx.fillStyle = 'rgba(0,200,83,0.12)';
     ctx.fill();
 
-    // Stroke line with grade-based coloring
-    for (let i = 1; i < elevs.length; i++) {
-      const grade = Math.abs(elevs[i] - elevs[i - 1]) / ((dists[i] - dists[i - 1]) * 1000) * 100;
-      ctx.strokeStyle = grade > 8 ? '#ff5252' : grade > 4 ? '#ffab40' : '#00c853';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(toX(dists[i - 1]), toY(elevs[i - 1]));
-      ctx.lineTo(toX(dists[i]), toY(elevs[i]));
-      ctx.stroke();
-    }
+    // Stroke smooth line (single color for sparkline)
+    ctx.beginPath();
+    drawSmooth(pts);
+    ctx.strokeStyle = '#00c853';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
     // Current position dot
     ctx.fillStyle = '#00c853';
