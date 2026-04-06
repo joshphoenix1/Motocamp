@@ -660,7 +660,7 @@
           currentLean = 0;
         }
       }
-      return; // don't display until calibrated
+      // Show uncalibrated lean while waiting — still useful, just not zeroed
     }
 
     // Continuous recalibration: when cruising straight at speed, slowly nudge
