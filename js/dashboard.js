@@ -81,17 +81,25 @@
   }
 
 
+  // Vehicle mode: 'moto' or 'car'
+  let vehicleMode = 'moto';
+
   function initDashboard() {
-    const btn = document.getElementById('btn-dashboard');
-    const mobileBtn = document.getElementById('mobile-dashboard');
+    const motoBtn = document.getElementById('btn-dash-moto');
+    const carBtn = document.getElementById('btn-dash-car');
+    const mobileMotoBtn = document.getElementById('mobile-dash-moto');
+    const mobileCarBtn = document.getElementById('mobile-dash-car');
     const closeBtn = document.getElementById('dashboard-close');
 
-    if (btn) btn.addEventListener('click', openDashboard);
-    if (mobileBtn) mobileBtn.addEventListener('click', openDashboard);
+    if (motoBtn) motoBtn.addEventListener('click', () => openDashboard('moto'));
+    if (carBtn) carBtn.addEventListener('click', () => openDashboard('car'));
+    if (mobileMotoBtn) mobileMotoBtn.addEventListener('click', () => openDashboard('moto'));
+    if (mobileCarBtn) mobileCarBtn.addEventListener('click', () => openDashboard('car'));
     if (closeBtn) closeBtn.addEventListener('click', closeDashboard);
   }
 
-  function openDashboard() {
+  function openDashboard(mode) {
+    vehicleMode = mode || 'moto';
     // Request GPS permission first — this triggers the browser prompt
     if (!navigator.geolocation) {
       alert('GPS is not supported on this device.');
@@ -118,8 +126,19 @@
       overlay.classList.remove('hidden');
       overlay.style.display = 'flex';
 
-      const btn = document.getElementById('btn-dashboard');
-      if (btn) btn.classList.add('active');
+      // Highlight active button
+      const motoBtn = document.getElementById('btn-dash-moto');
+      const carBtn = document.getElementById('btn-dash-car');
+      if (motoBtn) motoBtn.classList.toggle('active', vehicleMode === 'moto');
+      if (carBtn) carBtn.classList.toggle('active', vehicleMode === 'car');
+
+      // Show/hide lean elements based on vehicle mode
+      const leanArcs = document.getElementById('dash-lean-arcs');
+      const leanReadout = document.getElementById('dash-lean-readout');
+      const leanMax = document.getElementById('dash-max-lean');
+      if (leanArcs) leanArcs.style.display = vehicleMode === 'moto' ? '' : 'none';
+      if (leanReadout) leanReadout.style.display = vehicleMode === 'moto' ? '' : 'none';
+      if (leanMax) leanMax.parentElement.style.display = vehicleMode === 'moto' ? '' : 'none';
 
       document.body.classList.add('dashboard-active');
       requestWakeLock();
@@ -182,11 +201,12 @@
         window.addEventListener('deviceorientation', orientationListener);
       }
 
-      // Start accelerometer for lean angle
-      startLeanTracking();
+      // Start accelerometer for lean angle (motorcycle only)
+      if (vehicleMode === 'moto') startLeanTracking();
 
-      // Reset peak lean every 60 seconds
+      // Reset peak lean every 60 seconds (motorcycle only)
       if (peakResetInterval) clearInterval(peakResetInterval);
+      if (vehicleMode !== 'moto') { peakResetInterval = null; } else {
       peakResetInterval = setInterval(() => {
         peakLeanLeft = 0;
         peakLeanRight = 0;
@@ -198,6 +218,7 @@
         const ml = document.getElementById('dash-max-lean');
         if (ml) ml.textContent = '0';
       }, 90000);
+      }
 
       // Load saved target and wire up UI
       loadCompassTarget();
@@ -223,8 +244,10 @@
       overlay.classList.add('hidden');
       overlay.style.display = 'none';
 
-      const btn = document.getElementById('btn-dashboard');
-      if (btn) btn.classList.remove('active');
+      const motoBtn = document.getElementById('btn-dash-moto');
+      const carBtn = document.getElementById('btn-dash-car');
+      if (motoBtn) motoBtn.classList.remove('active');
+      if (carBtn) carBtn.classList.remove('active');
 
       document.body.classList.remove('dashboard-active');
 

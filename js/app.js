@@ -37,9 +37,6 @@
     loadingScreen.classList.add('fade-out');
     setTimeout(() => {
       loadingScreen.style.display = 'none';
-      // Auto-open the ride dashboard
-      const dashBtn = document.getElementById('btn-dashboard');
-      if (dashBtn) dashBtn.click();
     }, 500);
   }, 1500);
 
