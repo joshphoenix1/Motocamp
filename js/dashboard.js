@@ -809,8 +809,8 @@
   let precipGrid = null;     // { lats[], lons[], precip[][], time }
   let precipFetchInFlight = false;
   const PRECIP_GRID_SIZE = 7; // 7x7 = 49 points
-  const PRECIP_SPACING_DEG = 0.12; // ~13km spacing → ~80km total coverage
-  const RADAR_RANGE_KM = 30;
+  const PRECIP_SPACING_DEG = 0.22; // ~24km spacing → ~150km total coverage
+  const RADAR_RANGE_KM = 60;
 
   function fetchPrecipGrid() {
     if (!currentLat || !currentLng || precipFetchInFlight) return;
