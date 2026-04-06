@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Long Way Home — Logo Concepts</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0f1a; color: #e0e0e0; font-family: 'Inter', -apple-system, sans-serif; padding: 24px; }
+    h1 { color: #00c853; margin-bottom: 8px; font-size: 1.5rem; }
+    p.sub { color: #78909c; margin-bottom: 32px; font-size: 0.9rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+    .card {
+      background: #111827; border-radius: 16px; padding: 32px; text-align: center;
+      border: 2px solid transparent; cursor: pointer; transition: all 0.3s;
+    }
+    .card:hover { border-color: #00c853; transform: translateY(-2px); }
+    .card.selected { border-color: #00c853; box-shadow: 0 0 20px rgba(0,200,83,0.2); }
+    .card h3 { margin: 16px 0 6px; font-size: 1.1rem; }
+    .card .desc { color: #78909c; font-size: 0.8rem; margin-bottom: 12px; }
+    .logo-wrap { display: flex; justify-content: center; align-items: center; min-height: 140px; }
+    .preview-row { display: flex; gap: 16px; justify-content: center; align-items: flex-end; margin-top: 16px; }
+    .preview-row .icon { border-radius: 20%; overflow: hidden; }
+    .tagline { color: #b0bec5; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+    .colors { display: flex; gap: 6px; justify-content: center; margin-top: 12px; }
+    .swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); }
+    .dark-bg { background: #1a1a2e; padding: 20px; border-radius: 12px; }
+    .light-bg { background: #f5f5f5; padding: 20px; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Long Way Home — Logo Concepts</h1>
+  <p class="sub">Click to select. Each shows the icon mark, wordmark, and how it looks at app-icon size.</p>
+
+  <div class="grid">
+
+    <!-- Concept 1: Road & Horizon -->
+    <div class="card" onclick="this.classList.toggle('selected')">
+      <div class="logo-wrap">
+        <svg width="240" height="120" viewBox="0 0 240 120">
+          <!-- Road converging to horizon -->
+          <path d="M80,110 L110,40 L130,40 L160,110 Z" fill="#1a1a2e" stroke="#00c853" stroke-width="2"/>
+          <!-- Center line dashes -->
+          <line x1="120" y1="105" x2="120" y2="90" stroke="#ffab40" stroke-width="2" stroke-dasharray="4,6"/>
+          <line x1="120" y1="82" x2="120" y2="70" stroke="#ffab40" stroke-width="2"/>
+          <line x1="120" y1="62" x2="120" y2="54" stroke="#ffab40" stroke-width="1.5"/>
+          <!-- Sun/moon at horizon -->
+          <circle cx="120" cy="40" r="14" fill="none" stroke="#00c853" stroke-width="2"/>
+          <circle cx="120" cy="40" r="6" fill="#00c853"/>
+          <!-- Stars -->
+          <circle cx="85" cy="25" r="1.5" fill="#b0bec5"/>
+          <circle cx="155" cy="20" r="1" fill="#b0bec5"/>
+          <circle cx="100" cy="15" r="1.2" fill="#b0bec5"/>
+          <!-- Text -->
+          <text x="120" y="118" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
+        </svg>
+      </div>
+      <h3>The Road Ahead</h3>
+      <p class="desc">Converging road to a distant horizon. Clean, minimal, iconic. Works at any size.</p>
+      <div class="preview-row">
+        <div class="icon" style="width:64px;height:64px;">
+          <svg viewBox="0 0 100 100" width="64" height="64">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <path d="M30,90 L44,30 L56,30 L70,90 Z" fill="#111827" stroke="#00c853" stroke-width="2.5"/>
+            <line x1="50" y1="85" x2="50" y2="70" stroke="#ffab40" stroke-width="2.5" stroke-dasharray="4,6"/>
+            <line x1="50" y1="60" x2="50" y2="48" stroke="#ffab40" stroke-width="2"/>
+            <circle cx="50" cy="28" r="10" fill="none" stroke="#00c853" stroke-width="2.5"/>
+            <circle cx="50" cy="28" r="4" fill="#00c853"/>
+          </svg>
+        </div>
+        <div class="icon" style="width:48px;height:48px;">
+          <svg viewBox="0 0 100 100" width="48" height="48">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <path d="M30,90 L44,30 L56,30 L70,90 Z" fill="#111827" stroke="#00c853" stroke-width="3"/>
+            <circle cx="50" cy="28" r="10" fill="none" stroke="#00c853" stroke-width="3"/>
+            <circle cx="50" cy="28" r="4" fill="#00c853"/>
+          </svg>
+        </div>
+      </div>
+      <div class="colors">
+        <div class="swatch" style="background:#0a0f1a"></div>
+        <div class="swatch" style="background:#00c853"></div>
+        <div class="swatch" style="background:#ffab40"></div>
+      </div>
+    </div>
+
+    <!-- Concept 2: Compass + Tent -->
+    <div class="card" onclick="this.classList.toggle('selected')">
+      <div class="logo-wrap">
+        <svg width="240" height="120" viewBox="0 0 240 120">
+          <!-- Compass circle -->
+          <circle cx="120" cy="52" r="36" fill="none" stroke="#00c853" stroke-width="2"/>
+          <!-- N/S/E/W ticks -->
+          <line x1="120" y1="18" x2="120" y2="24" stroke="#00c853" stroke-width="2"/>
+          <line x1="120" y1="80" x2="120" y2="86" stroke="#78909c" stroke-width="1.5"/>
+          <line x1="86" y1="52" x2="92" y2="52" stroke="#78909c" stroke-width="1.5"/>
+          <line x1="148" y1="52" x2="154" y2="52" stroke="#78909c" stroke-width="1.5"/>
+          <!-- Tent shape as compass needle -->
+          <polygon points="120,22 112,62 120,56 128,62" fill="#00c853" opacity="0.8"/>
+          <polygon points="120,82 112,62 120,56 128,62" fill="#1e88e5" opacity="0.5"/>
+          <!-- Small campfire dot -->
+          <circle cx="120" cy="52" r="3" fill="#ffab40"/>
+          <!-- Text -->
+          <text x="120" y="112" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="600" font-size="11" letter-spacing="2.5">LONG WAY HOME</text>
+        </svg>
+      </div>
+      <h3>Compass Tent</h3>
+      <p class="desc">Compass rose with a tent-shaped north needle. Camping + navigation in one mark.</p>
+      <div class="preview-row">
+        <div class="icon" style="width:64px;height:64px;">
+          <svg viewBox="0 0 100 100" width="64" height="64">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <circle cx="50" cy="50" r="34" fill="none" stroke="#00c853" stroke-width="3"/>
+            <polygon points="50,18 40,56 50,48 60,56" fill="#00c853" opacity="0.85"/>
+            <polygon points="50,82 40,56 50,48 60,56" fill="#1e88e5" opacity="0.5"/>
+            <circle cx="50" cy="50" r="3.5" fill="#ffab40"/>
+          </svg>
+        </div>
+        <div class="icon" style="width:48px;height:48px;">
+          <svg viewBox="0 0 100 100" width="48" height="48">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <circle cx="50" cy="50" r="34" fill="none" stroke="#00c853" stroke-width="3.5"/>
+            <polygon points="50,18 40,56 50,48 60,56" fill="#00c853"/>
+            <polygon points="50,82 40,56 50,48 60,56" fill="#1e88e5" opacity="0.5"/>
+            <circle cx="50" cy="50" r="4" fill="#ffab40"/>
+          </svg>
+        </div>
+      </div>
+      <div class="colors">
+        <div class="swatch" style="background:#0a0f1a"></div>
+        <div class="swatch" style="background:#00c853"></div>
+        <div class="swatch" style="background:#1e88e5"></div>
+        <div class="swatch" style="background:#ffab40"></div>
+      </div>
+    </div>
+
+    <!-- Concept 3: Mountain Road -->
+    <div class="card" onclick="this.classList.toggle('selected')">
+      <div class="logo-wrap">
+        <svg width="240" height="120" viewBox="0 0 240 120">
+          <!-- Mountains -->
+          <polygon points="60,75 100,30 140,75" fill="none" stroke="#00c853" stroke-width="2" stroke-linejoin="round"/>
+          <polygon points="110,75 140,42 170,75" fill="none" stroke="#00c853" stroke-width="2" stroke-linejoin="round" opacity="0.5"/>
+          <!-- Winding road -->
+          <path d="M70,95 Q95,78 120,85 Q145,92 165,75" fill="none" stroke="#ffab40" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Pin at end -->
+          <circle cx="165" cy="73" r="5" fill="#ff5252" stroke="#fff" stroke-width="1.5"/>
+          <!-- Text -->
+          <text x="120" y="115" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
+        </svg>
+      </div>
+      <h3>Mountain Trail</h3>
+      <p class="desc">Mountain silhouette with a winding road and destination pin. Adventure + mapping.</p>
+      <div class="preview-row">
+        <div class="icon" style="width:64px;height:64px;">
+          <svg viewBox="0 0 100 100" width="64" height="64">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <polygon points="20,72 50,22 80,72" fill="none" stroke="#00c853" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="40,72 62,38 84,72" fill="none" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round" opacity="0.4"/>
+            <path d="M20,88 Q40,74 55,82 Q70,90 85,72" fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="85" cy="70" r="5" fill="#ff5252"/>
+          </svg>
+        </div>
+        <div class="icon" style="width:48px;height:48px;">
+          <svg viewBox="0 0 100 100" width="48" height="48">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <polygon points="20,72 50,22 80,72" fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M20,88 Q45,74 55,82 Q70,90 85,72" fill="none" stroke="#ffab40" stroke-width="3.5" stroke-linecap="round"/>
+            <circle cx="85" cy="70" r="6" fill="#ff5252"/>
+          </svg>
+        </div>
+      </div>
+      <div class="colors">
+        <div class="swatch" style="background:#0a0f1a"></div>
+        <div class="swatch" style="background:#00c853"></div>
+        <div class="swatch" style="background:#ffab40"></div>
+        <div class="swatch" style="background:#ff5252"></div>
+      </div>
+    </div>
+
+    <!-- Concept 4: Minimal Pin + Road -->
+    <div class="card" onclick="this.classList.toggle('selected')">
+      <div class="logo-wrap">
+        <svg width="240" height="120" viewBox="0 0 240 120">
+          <!-- Map pin outline with road inside -->
+          <path d="M120,10 C98,10 82,28 82,48 C82,72 120,100 120,100 C120,100 158,72 158,48 C158,28 142,10 120,10 Z"
+                fill="none" stroke="#00c853" stroke-width="2.5"/>
+          <!-- Road inside pin -->
+          <path d="M108,80 L116,44 L124,44 L132,80" fill="#111827" stroke="#78909c" stroke-width="1"/>
+          <line x1="120" y1="76" x2="120" y2="60" stroke="#ffab40" stroke-width="1.5" stroke-dasharray="3,4"/>
+          <!-- Horizon line inside pin -->
+          <line x1="96" y1="48" x2="144" y2="48" stroke="#00c853" stroke-width="1" opacity="0.3"/>
+          <!-- Text -->
+          <text x="120" y="116" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="10.5" letter-spacing="3">LONG WAY HOME</text>
+        </svg>
+      </div>
+      <h3>Road Pin</h3>
+      <p class="desc">Map pin with a vanishing-point road inside. Location + journey combined.</p>
+      <div class="preview-row">
+        <div class="icon" style="width:64px;height:64px;">
+          <svg viewBox="0 0 100 100" width="64" height="64">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <path d="M50,8 C30,8 16,24 16,42 C16,64 50,92 50,92 C50,92 84,64 84,42 C84,24 70,8 50,8 Z"
+                  fill="none" stroke="#00c853" stroke-width="3"/>
+            <path d="M38,72 L46,36 L54,36 L62,72" fill="#111827" stroke="#78909c" stroke-width="1.5"/>
+            <line x1="50" y1="68" x2="50" y2="50" stroke="#ffab40" stroke-width="2" stroke-dasharray="3,4"/>
+          </svg>
+        </div>
+        <div class="icon" style="width:48px;height:48px;">
+          <svg viewBox="0 0 100 100" width="48" height="48">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <path d="M50,8 C30,8 16,24 16,42 C16,64 50,92 50,92 C50,92 84,64 84,42 C84,24 70,8 50,8 Z"
+                  fill="none" stroke="#00c853" stroke-width="4"/>
+            <line x1="50" y1="68" x2="50" y2="44" stroke="#ffab40" stroke-width="3" stroke-dasharray="4,5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="colors">
+        <div class="swatch" style="background:#0a0f1a"></div>
+        <div class="swatch" style="background:#00c853"></div>
+        <div class="swatch" style="background:#ffab40"></div>
+      </div>
+    </div>
+
+    <!-- Concept 5: Campfire Waypoint -->
+    <div class="card" onclick="this.classList.toggle('selected')">
+      <div class="logo-wrap">
+        <svg width="240" height="120" viewBox="0 0 240 120">
+          <!-- Campfire -->
+          <path d="M120,28 C114,42 108,50 112,60 C114,64 118,66 120,60 C122,66 126,64 128,60 C132,50 126,42 120,28 Z"
+                fill="#ffab40" opacity="0.9"/>
+          <path d="M120,38 C117,46 115,52 118,56 C119,58 121,58 122,56 C125,52 123,46 120,38 Z"
+                fill="#ff5252"/>
+          <!-- Logs -->
+          <line x1="106" y1="68" x2="134" y2="62" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
+          <line x1="106" y1="62" x2="134" y2="68" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
+          <!-- Signal rings (like a waypoint beacon) -->
+          <circle cx="120" cy="50" r="24" fill="none" stroke="#00c853" stroke-width="1" opacity="0.3"/>
+          <circle cx="120" cy="50" r="34" fill="none" stroke="#00c853" stroke-width="0.8" opacity="0.15"/>
+          <!-- Text -->
+          <text x="120" y="100" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
+          <text x="120" y="113" text-anchor="middle" fill="#78909c" font-family="Inter, sans-serif" font-weight="400" font-size="7" letter-spacing="4">FIND CAMP. GO OFF-GRID.</text>
+        </svg>
+      </div>
+      <h3>Campfire Beacon</h3>
+      <p class="desc">Campfire with signal rings — a waypoint calling you home. Warm, inviting, unique.</p>
+      <div class="preview-row">
+        <div class="icon" style="width:64px;height:64px;">
+          <svg viewBox="0 0 100 100" width="64" height="64">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <path d="M50,18 C42,36 34,48 40,60 C43,66 47,68 50,60 C53,68 57,66 60,60 C66,48 58,36 50,18 Z" fill="#ffab40"/>
+            <path d="M50,30 C46,40 43,48 47,54 C48,56 52,56 53,54 C57,48 54,40 50,30 Z" fill="#ff5252"/>
+            <line x1="34" y1="70" x2="66" y2="62" stroke="#795548" stroke-width="4" stroke-linecap="round"/>
+            <line x1="34" y1="62" x2="66" y2="70" stroke="#795548" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="50" cy="46" r="26" fill="none" stroke="#00c853" stroke-width="2" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="icon" style="width:48px;height:48px;">
+          <svg viewBox="0 0 100 100" width="48" height="48">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <path d="M50,18 C42,36 34,48 40,60 C43,66 47,68 50,60 C53,68 57,66 60,60 C66,48 58,36 50,18 Z" fill="#ffab40"/>
+            <path d="M50,30 C46,40 43,48 47,54 C48,56 52,56 53,54 C57,48 54,40 50,30 Z" fill="#ff5252"/>
+            <line x1="34" y1="70" x2="66" y2="62" stroke="#795548" stroke-width="5" stroke-linecap="round"/>
+            <line x1="34" y1="62" x2="66" y2="70" stroke="#795548" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="colors">
+        <div class="swatch" style="background:#0a0f1a"></div>
+        <div class="swatch" style="background:#00c853"></div>
+        <div class="swatch" style="background:#ffab40"></div>
+        <div class="swatch" style="background:#795548"></div>
+      </div>
+    </div>
+
+    <!-- Concept 6: Tyre Track Circle -->
+    <div class="card" onclick="this.classList.toggle('selected')">
+      <div class="logo-wrap">
+        <svg width="240" height="120" viewBox="0 0 240 120">
+          <!-- Tyre track forming a broken circle -->
+          <circle cx="120" cy="50" r="32" fill="none" stroke="#00c853" stroke-width="3"
+                  stroke-dasharray="6,4" stroke-linecap="round"/>
+          <!-- Gap at bottom with road going out -->
+          <rect x="115" y="76" width="10" height="12" fill="#0a0f1a"/>
+          <line x1="120" y1="82" x2="120" y2="98" stroke="#ffab40" stroke-width="2" stroke-dasharray="3,4"/>
+          <!-- Arrow/direction indicator inside -->
+          <polygon points="120,30 112,52 120,46 128,52" fill="#00c853" opacity="0.7"/>
+          <!-- Text -->
+          <text x="120" y="114" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
+        </svg>
+      </div>
+      <h3>Tyre Track Compass</h3>
+      <p class="desc">Broken tyre-track circle with a road trailing off. Journey that loops back home.</p>
+      <div class="preview-row">
+        <div class="icon" style="width:64px;height:64px;">
+          <svg viewBox="0 0 100 100" width="64" height="64">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <circle cx="50" cy="44" r="30" fill="none" stroke="#00c853" stroke-width="4"
+                    stroke-dasharray="6,4" stroke-linecap="round"/>
+            <rect x="46" y="70" width="8" height="10" fill="#0a0f1a"/>
+            <line x1="50" y1="76" x2="50" y2="94" stroke="#ffab40" stroke-width="3" stroke-dasharray="4,5"/>
+            <polygon points="50,22 42,48 50,40 58,48" fill="#00c853" opacity="0.8"/>
+          </svg>
+        </div>
+        <div class="icon" style="width:48px;height:48px;">
+          <svg viewBox="0 0 100 100" width="48" height="48">
+            <rect width="100" height="100" fill="#0a0f1a"/>
+            <circle cx="50" cy="44" r="30" fill="none" stroke="#00c853" stroke-width="5"
+                    stroke-dasharray="6,4" stroke-linecap="round"/>
+            <rect x="45" y="70" width="10" height="10" fill="#0a0f1a"/>
+            <line x1="50" y1="76" x2="50" y2="94" stroke="#ffab40" stroke-width="4"/>
+            <polygon points="50,22 42,48 50,40 58,48" fill="#00c853"/>
+          </svg>
+        </div>
+      </div>
+      <div class="colors">
+        <div class="swatch" style="background:#0a0f1a"></div>
+        <div class="swatch" style="background:#00c853"></div>
+        <div class="swatch" style="background:#ffab40"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <p style="margin-top:32px;color:#546e7a;font-size:0.8rem;text-align:center">Click cards to select. All concepts use the existing app color palette (#00c853 green, #ffab40 amber, dark #0a0f1a).</p>
+</body>
+</html>
