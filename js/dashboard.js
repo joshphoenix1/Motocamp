@@ -712,7 +712,7 @@
         line.setAttribute('y1', cy + innerR * Math.sin(rad));
         line.setAttribute('x2', cx + outerR * Math.cos(rad));
         line.setAttribute('y2', cy + outerR * Math.sin(rad));
-        line.setAttribute('stroke', 'rgba(255,255,255,0.15)');
+        line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
         line.setAttribute('stroke-width', '1.5');
         line.setAttribute('stroke-linecap', 'round');
         svg.appendChild(line);
@@ -724,7 +724,7 @@
         text.setAttribute('y', cy + labelR * Math.sin(rad));
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('dominant-baseline', 'central');
-        text.setAttribute('fill', 'rgba(255,255,255,0.12)');
+        text.setAttribute('fill', 'rgba(255,255,255,0.45)');
         text.setAttribute('font-size', '8');
         text.setAttribute('font-family', 'Inter, sans-serif');
         text.textContent = angle + '°';
