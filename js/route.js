@@ -390,6 +390,7 @@ const RoutePlanner = {
     if (routeCoords && routeCoords.length > 1) {
       const elData = await this.fetchElevationData(routeCoords);
       if (elData) {
+        this.lastElevationData = elData; // expose for dashboard sparkline
         // Insert elevation profile after route overview
         const overviewEl = content.querySelector('.route-overview');
         const insertTarget = overviewEl ? overviewEl.nextSibling : content.firstChild;
@@ -740,6 +741,7 @@ const RoutePlanner = {
 
   clearRoute() {
     this.clearRouteDisplay();
+    this.lastElevationData = null;
     document.getElementById('route-start').value = '';
     document.getElementById('route-start').dataset.lat = '';
     document.getElementById('route-start').dataset.lon = '';

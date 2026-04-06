@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css?v=20260320d" />
+  <link rel="stylesheet" href="css/style.css?v=20260406a" />
 </head>
 <body>
   <!-- Loading Screen -->
@@ -306,67 +306,115 @@
         <span id="dash-gps-text">Waiting for GPS...</span>
       </div>
 
-      <!-- Speed: dominant element -->
-      <div class="dash-speed-zone">
-        <span class="dash-speed-num" id="dash-speed-value">0</span>
-        <span class="dash-speed-unit">km/h</span>
-        <div class="dash-speed-max">max <span id="dash-max-speed">0</span></div>
-      </div>
-
-      <!-- Altitude section with chart -->
-      <div class="dash-altitude-zone">
-        <div class="dash-alt-header">
-          <div class="dash-alt-reading">
-            <i class="fas fa-mountain"></i>
-            <span class="dash-alt-value" id="dash-altitude-value">--</span><span class="dash-alt-unit">m</span>
-          </div>
-          <div class="dash-alt-reading">
-            <i class="fas fa-compass"></i>
-            <span id="dash-heading-value">--</span>
-          </div>
-          <div class="dash-alt-reading">
-            <i class="fas fa-thermometer-half"></i>
-            <span class="dash-alt-value" id="dash-temp-value">--</span><span class="dash-alt-unit">°C</span>
-          </div>
+      <!-- Top instrument bar -->
+      <div class="dash-top-bar">
+        <div class="dash-alt-reading">
+          <i class="fas fa-mountain"></i>
+          <span class="dash-alt-value" id="dash-altitude-value">--</span><span class="dash-alt-unit">m</span>
         </div>
-      </div>
-
-      <!-- Trip stats strip -->
-      <div class="dash-stats-strip">
-        <div class="dash-stat">
-          <i class="fas fa-road"></i>
-          <span id="dash-trip-value">0.0</span><span class="dash-stat-unit">km</span>
+        <div class="dash-alt-reading">
+          <i class="fas fa-compass"></i>
+          <span id="dash-heading-value">--</span>
         </div>
-        <div class="dash-stat">
-          <i class="fas fa-arrow-trend-up"></i>
-          <span id="dash-gradient-value">0</span><span class="dash-stat-unit">%</span>
-        </div>
-        <div class="dash-stat">
-          <i class="fas fa-gauge"></i>
-          <span id="dash-avg-speed-value">0</span><span class="dash-stat-unit">avg</span>
-        </div>
-        <div class="dash-stat">
-          <i class="fas fa-bolt"></i>
-          <span id="dash-top-speed-value">0</span><span class="dash-stat-unit">top</span>
-        </div>
-      </div>
-
-      <!-- Compass arrow to destination: bottom quarter -->
-      <div class="dash-compass-zone" id="dash-compass-zone">
-        <div class="dash-compass-arrow-wrap">
-          <svg class="dash-compass-arrow" id="dash-compass-arrow" viewBox="0 0 100 100">
-            <polygon points="50,6 86,80 50,64 14,80"
-                     fill="#00c853" stroke="#00e676" stroke-width="3" stroke-linejoin="round"/>
+        <div class="dash-alt-reading">
+          <i class="fas fa-thermometer-half"></i>
+          <span class="dash-alt-value" id="dash-temp-value">--</span><span class="dash-alt-unit">°C</span>
+          <svg class="dash-pressure-arrow" id="dash-pressure-arrow" viewBox="0 0 12 12" width="14" height="14">
+            <polygon points="6,1 11,11 6,8 1,11" fill="var(--text-muted)"/>
           </svg>
         </div>
-        <div class="dash-compass-info">
-          <div class="dash-compass-target" id="dash-compass-target">Tap to set destination</div>
-          <div class="dash-compass-readout">
-            <span class="dash-compass-num" id="dash-compass-dist">--</span><span class="dash-info-unit">km</span>
-            <span class="dash-compass-brg">bearing <span id="dash-compass-bearing">--</span>°</span>
+        <div class="dash-alt-reading dash-wind-reading">
+          <i class="fas fa-wind"></i>
+          <span class="dash-alt-value" id="dash-wind-value">--</span><span class="dash-alt-unit">km/h</span>
+          <svg class="dash-wind-arrow" id="dash-wind-arrow" viewBox="0 0 16 16" width="16" height="16">
+            <polygon points="8,1 14,13 8,9 2,13" fill="var(--text-muted)"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Main content: 3-column in landscape -->
+      <div class="dash-main">
+        <!-- Left column: radar minimap -->
+        <div class="dash-left-col">
+          <div class="dash-radar-wrap" id="dash-radar-wrap">
+            <canvas class="dash-radar-canvas" id="dash-radar-canvas"></canvas>
+            <div class="dash-radar-label">20km</div>
+          </div>
+        </div>
+
+        <!-- Centre column: speed + lean -->
+        <div class="dash-centre-col">
+          <div class="dash-speed-zone">
+            <!-- Lean angle arcs (SVG overlay) -->
+            <svg class="dash-lean-arcs" id="dash-lean-arcs" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+              <!-- Left arc (lean left) -->
+              <path id="dash-lean-left-bg" d="" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-linecap="round"/>
+              <path id="dash-lean-left" d="" fill="none" stroke="#00c853" stroke-width="6" stroke-linecap="round"/>
+              <!-- Right arc (lean right) -->
+              <path id="dash-lean-right-bg" d="" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-linecap="round"/>
+              <path id="dash-lean-right" d="" fill="none" stroke="#00c853" stroke-width="6" stroke-linecap="round"/>
+              <!-- Peak lean tick marks -->
+              <line id="dash-lean-peak-left" x1="0" y1="0" x2="0" y2="0" stroke="rgba(0,200,83,0.35)" stroke-width="3" stroke-linecap="round"/>
+              <line id="dash-lean-peak-right" x1="0" y1="0" x2="0" y2="0" stroke="rgba(0,200,83,0.35)" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <div class="dash-speed-content">
+              <span class="dash-speed-num" id="dash-speed-value">0</span>
+              <span class="dash-speed-unit">km/h</span>
+              <div class="dash-speed-sub">
+                <span class="dash-lean-readout" id="dash-lean-readout"></span>
+                <span class="dash-speed-max">max <span id="dash-max-speed">0</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column: compass arrow -->
+        <div class="dash-right-col">
+          <div class="dash-compass-zone" id="dash-compass-zone">
+            <div class="dash-compass-arrow-wrap">
+              <svg class="dash-compass-arrow" id="dash-compass-arrow" viewBox="0 0 100 100">
+                <polygon points="50,6 86,80 50,64 14,80"
+                         fill="#00c853" stroke="#00e676" stroke-width="3" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="dash-compass-info">
+              <div class="dash-compass-target" id="dash-compass-target">Tap to set destination</div>
+              <div class="dash-compass-readout">
+                <span class="dash-compass-num" id="dash-compass-dist">--</span><span class="dash-info-unit">km</span>
+                <span class="dash-compass-brg">bearing <span id="dash-compass-bearing">--</span>°</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Bottom bar: elevation sparkline + stats -->
+      <div class="dash-bottom-bar">
+        <div class="dash-elevation-strip hidden" id="dash-elevation-strip">
+          <canvas class="dash-elevation-canvas" id="dash-elevation-canvas"></canvas>
+          <div class="dash-elevation-stats" id="dash-elevation-stats"></div>
+        </div>
+        <div class="dash-stats-strip">
+          <div class="dash-stat">
+            <i class="fas fa-road"></i>
+            <span id="dash-trip-value">0.0</span><span class="dash-stat-unit">km</span>
+          </div>
+          <div class="dash-stat">
+            <i class="fas fa-arrow-trend-up"></i>
+            <span id="dash-gradient-value">0</span><span class="dash-stat-unit">%</span>
+          </div>
+          <div class="dash-stat">
+            <i class="fas fa-gauge"></i>
+            <span id="dash-avg-speed-value">0</span><span class="dash-stat-unit">avg</span>
+          </div>
+          <div class="dash-stat">
+            <i class="fas fa-bolt"></i>
+            <span id="dash-top-speed-value">0</span><span class="dash-stat-unit">top</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compass destination input (floats above) -->
       <div class="dash-compass-input hidden" id="dash-compass-input">
         <input type="text" id="dash-compass-address" placeholder="Enter address or place..." autocomplete="off">
         <div class="dash-compass-results" id="dash-compass-results"></div>
@@ -384,14 +432,14 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <script src="js/health.js?v=20260320d"></script>
-  <script src="js/utils.js?v=20260320d"></script>
-  <script src="js/data-loader.js?v=20260320d"></script>
-  <script src="js/weather.js?v=20260320d"></script>
-  <script src="js/layers.js?v=20260320d"></script>
-  <script src="js/gravel-roads.js?v=20260320d"></script>
-  <script src="js/route.js?v=20260320d"></script>
-  <script src="js/dashboard.js?v=20260320d"></script>
-  <script src="js/app.js?v=20260320d"></script>
+  <script src="js/health.js?v=20260406a"></script>
+  <script src="js/utils.js?v=20260406a"></script>
+  <script src="js/data-loader.js?v=20260406a"></script>
+  <script src="js/weather.js?v=20260406a"></script>
+  <script src="js/layers.js?v=20260406a"></script>
+  <script src="js/gravel-roads.js?v=20260406a"></script>
+  <script src="js/route.js?v=20260406a"></script>
+  <script src="js/dashboard.js?v=20260406a"></script>
+  <script src="js/app.js?v=20260406a"></script>
 </body>
 </html>
