@@ -272,82 +272,276 @@ const Layers = {
           icon: Utils.createMarker(meta.markerType, meta.icon),
         });
 
-        // Build popup based on available tags
-        let popup = `<div style="min-width:150px"><strong>${name}</strong>`;
-        if (props.operator) popup += `<br><span style="font-size:0.8em">Operator: ${props.operator}</span>`;
-        if (props.opening_hours) popup += `<br><span style="font-size:0.8em">Hours: ${props.opening_hours}</span>`;
-        if (props.fee === 'no') popup += `<br><span style="font-size:0.8em;color:var(--accent)">Free</span>`;
-        else if (props.fee === 'yes' || props.charge) popup += `<br><span style="font-size:0.8em">Fee: ${props.charge || 'yes'}</span>`;
-        if (props.website) popup += `<br><a href="${props.website}" target="_blank" style="font-size:0.8em">Website</a>`;
-        if (props.phone) popup += `<br><span style="font-size:0.8em">Phone: ${props.phone}</span>`;
-        if (props.description) popup += `<br><span style="font-size:0.8em">${props.description}</span>`;
-
-        // Campsite-specific tags
-        if (category === 'campsites') {
-          const amenities = [];
-          if (props.drinking_water === 'yes') amenities.push('Water');
-          if (props.toilets === 'yes') amenities.push('Toilets');
-          if (props.shower === 'yes') amenities.push('Showers');
-          if (props.power_supply === 'yes') amenities.push('Power');
-          if (props.internet_access === 'yes' || props.internet_access === 'wlan') amenities.push('WiFi');
-          if (props.sanitary_dump_station === 'yes') amenities.push('Dump');
-          if (props.tents === 'yes') amenities.push('Tents');
-          if (props.caravans === 'yes') amenities.push('Caravans');
-          if (amenities.length) popup += `<br><span style="font-size:0.75em;color:var(--text-secondary)">${amenities.join(' · ')}</span>`;
-          if (props.capacity) popup += `<br><span style="font-size:0.75em">${props.capacity} sites</span>`;
-        }
-
-        // Fuel-specific
-        if (category === 'fuel') {
-          const fuels = [];
-          if (props['fuel:diesel'] === 'yes') fuels.push('Diesel');
-          if (props['fuel:octane_95'] === 'yes' || props['fuel:octane_91'] === 'yes') fuels.push('Petrol');
-          if (props['fuel:lpg'] === 'yes') fuels.push('LPG');
-          if (fuels.length) popup += `<br><span style="font-size:0.75em">${fuels.join(' · ')}</span>`;
-        }
-
-        // Pass/viewpoint elevation
-        if ((category === 'passes' || category === 'viewpoints') && props.ele) {
-          popup += `<br><span style="font-size:0.8em">Elevation: ${props.ele}m</span>`;
-        }
-
-        // Hospital — emergency info
-        if (category === 'hospitals') {
-          if (props.emergency === 'yes') popup += `<br><span style="font-size:0.8em;color:#ff5252;font-weight:600">Emergency / A&E</span>`;
-          if (props.healthcare) popup += `<br><span style="font-size:0.75em">${props.healthcare}</span>`;
-        }
-
-        // Border crossing
-        if (category === 'borderCrossings') {
-          if (props.border_type) popup += `<br><span style="font-size:0.8em">${props.border_type}</span>`;
-        }
-
-        // Ford — depth
-        if (category === 'fords' && props.depth) {
-          popup += `<br><span style="font-size:0.8em">Depth: ${props.depth}m</span>`;
-        }
-
-        // Water sources — drinkability
-        if (category === 'waterSources') {
-          if (props.drinking_water === 'yes') popup += `<br><span style="font-size:0.8em;color:var(--accent)">Safe to drink</span>`;
-          else popup += `<br><span style="font-size:0.8em;color:#ffab40">Filter/treat required</span>`;
-        }
-
-        // Embassy — country
-        if (category === 'embassies' && props.country) {
-          popup += `<br><span style="font-size:0.8em">${props.country}</span>`;
-        }
-
-        // ATM — network/operator
-        if (category === 'atms' && props.network) {
-          popup += `<br><span style="font-size:0.75em">${props.network}</span>`;
-        }
-
-        popup += '</div>';
+        // Build rich popup
+        const popup = this._buildOverpassPopup(category, name, props, lat, lon);
         marker.bindPopup(popup);
         group.addLayer(marker);
       }
     });
+  },
+
+  // ===== Rich popup builder for all Overpass POIs =====
+  _buildOverpassPopup(category, name, props, lat, lon) {
+    const s = (sz, clr, txt) => `<span style="font-size:${sz};${clr ? 'color:' + clr + ';' : ''}">${txt}</span>`;
+    const row = (label, val) => val ? `<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:0.78em"><span style="color:#78909c">${label}</span><span>${val}</span></div>` : '';
+    const badge = (icon, text, color) => `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-size:0.7em;background:${color || 'rgba(255,255,255,0.06)'};margin:2px">${icon ? '<i class="fas fa-' + icon + '" style="font-size:0.8em"></i>' : ''}${text}</span>`;
+    const esc = (t) => t ? t.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+
+    let html = `<div style="min-width:200px;max-width:300px">`;
+
+    // === Header ===
+    html += `<div style="font-weight:700;font-size:1em;margin-bottom:4px">${esc(name)}</div>`;
+
+    // Category type label
+    const typeLabels = {
+      campsites: this._classifyCampsite(props),
+      fuel: 'Fuel Station', water: 'Drinking Water', toilets: 'Public Toilet',
+      shops: props.shop === 'supermarket' ? 'Supermarket' : 'Convenience Store',
+      shelters: props.tourism === 'wilderness_hut' ? 'Wilderness Hut' : 'Shelter',
+      dumpStations: 'Dump Station', repairs: props.shop === 'motorcycle' ? 'Motorcycle Shop' : 'Repair / Mechanic',
+      picnicSites: 'Picnic Site', viewpoints: 'Viewpoint', passes: 'Mountain Pass',
+      accommodation: props.tourism === 'alpine_hut' ? 'Alpine Hut' : 'Hostel',
+      hospitals: props.emergency === 'yes' ? 'Hospital (Emergency)' : (props.amenity === 'clinic' ? 'Clinic' : 'Hospital'),
+      atms: props.amenity === 'bank' ? 'Bank' : 'ATM',
+      borderCrossings: 'Border Crossing', restAreas: 'Rest Area',
+      fords: 'Ford / River Crossing', ferries: 'Ferry Terminal',
+      waterSources: props.natural === 'spring' ? 'Natural Spring' : 'Water Well',
+      embassies: 'Embassy / Consulate',
+    };
+    const typeLabel = typeLabels[category] || category;
+    html += `<div style="font-size:0.75em;color:#78909c;margin-bottom:8px">${typeLabel}</div>`;
+
+    // === Operator / Brand ===
+    if (props.operator || props.brand) {
+      html += `<div style="font-size:0.8em;margin-bottom:6px"><i class="fas fa-building" style="color:var(--accent);width:14px"></i> ${esc(props.operator || props.brand)}</div>`;
+    }
+
+    // === Campsite-specific rich data ===
+    if (category === 'campsites') {
+      // Fee
+      const fee = props.fee === 'no' ? '<span style="color:#00c853;font-weight:600">Free</span>' :
+                  props.charge ? esc(props.charge) :
+                  props.fee === 'yes' ? 'Paid' : '<span style="color:#78909c">Unknown</span>';
+      html += row('Fee', fee);
+
+      // Access type
+      if (props.access) html += row('Access', esc(props.access));
+
+      // Reservation
+      if (props.reservation) html += row('Booking', esc(props.reservation));
+
+      // Capacity
+      if (props.capacity) html += row('Capacity', props.capacity + ' sites');
+
+      // Amenity badges
+      const amenities = [];
+      if (props.drinking_water === 'yes') amenities.push(badge('droplet', 'Water', 'rgba(0,188,212,0.15)'));
+      if (props.toilets === 'yes') amenities.push(badge('toilet', 'Toilets', 'rgba(96,125,139,0.15)'));
+      if (props.shower === 'yes') amenities.push(badge('shower', 'Showers', 'rgba(0,150,255,0.15)'));
+      if (props.power_supply === 'yes') amenities.push(badge('plug', 'Power', 'rgba(255,193,7,0.15)'));
+      if (props.internet_access === 'yes' || props.internet_access === 'wlan') amenities.push(badge('wifi', 'WiFi', 'rgba(33,150,243,0.15)'));
+      if (props.sanitary_dump_station === 'yes') amenities.push(badge('trailer', 'Dump', 'rgba(84,110,122,0.15)'));
+      if (props.kitchen === 'yes') amenities.push(badge('utensils', 'Kitchen', 'rgba(255,152,0,0.15)'));
+      if (props.bbq === 'yes') amenities.push(badge('fire', 'BBQ', 'rgba(255,87,34,0.15)'));
+      if (props.washing_machine === 'yes') amenities.push(badge('shirt', 'Laundry', 'rgba(156,39,176,0.15)'));
+      if (props.picnic_table === 'yes') amenities.push(badge('utensils', 'Tables', 'rgba(139,195,74,0.15)'));
+      if (amenities.length) html += `<div style="display:flex;flex-wrap:wrap;gap:2px;margin:6px 0">${amenities.join('')}</div>`;
+
+      // Vehicle/accommodation type badges
+      const types = [];
+      if (props.tents === 'yes') types.push(badge('campground', 'Tents'));
+      if (props.caravans === 'yes') types.push(badge('caravan', 'Caravans'));
+      if (props.motorhome === 'yes') types.push(badge('truck-monster', 'Motorhome'));
+      if (props.backcountry === 'yes') types.push(badge('hiking', 'Backcountry'));
+      if (props.group_only === 'yes') types.push(badge('users', 'Group only'));
+      if (types.length) html += `<div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0">${types.join('')}</div>`;
+
+      // Fire / dogs / wheelchair
+      const rules = [];
+      if (props.openfire === 'yes') rules.push('Campfires OK');
+      else if (props.openfire === 'no') rules.push('No campfires');
+      if (props.dog === 'yes') rules.push('Dogs allowed');
+      else if (props.dog === 'leashed') rules.push('Dogs on leash');
+      else if (props.dog === 'no') rules.push('No dogs');
+      if (props.wheelchair === 'yes') rules.push('Wheelchair accessible');
+      if (rules.length) html += `<div style="font-size:0.72em;color:#b0bec5;margin:4px 0">${rules.join(' · ')}</div>`;
+
+      // Surface
+      if (props.surface) html += row('Surface', esc(props.surface));
+
+      // Payment
+      const payments = [];
+      if (props['payment:cash'] === 'yes') payments.push('Cash');
+      if (props['payment:cards'] === 'yes' || props['payment:credit_cards'] === 'yes') payments.push('Card');
+      if (payments.length) html += row('Payment', payments.join(', '));
+    }
+
+    // === Fuel-specific ===
+    if (category === 'fuel') {
+      const fuels = [];
+      if (props['fuel:diesel'] === 'yes') fuels.push(badge('', 'Diesel', 'rgba(255,193,7,0.15)'));
+      if (props['fuel:octane_91'] === 'yes') fuels.push(badge('', '91', 'rgba(0,200,83,0.15)'));
+      if (props['fuel:octane_95'] === 'yes') fuels.push(badge('', '95', 'rgba(33,150,243,0.15)'));
+      if (props['fuel:octane_98'] === 'yes') fuels.push(badge('', '98', 'rgba(156,39,176,0.15)'));
+      if (props['fuel:lpg'] === 'yes') fuels.push(badge('', 'LPG', 'rgba(255,152,0,0.15)'));
+      if (props['fuel:e85'] === 'yes') fuels.push(badge('', 'E85', 'rgba(139,195,74,0.15)'));
+      if (props['fuel:HGV_diesel'] === 'yes') fuels.push(badge('', 'Truck Diesel', 'rgba(255,87,34,0.15)'));
+      if (fuels.length) html += `<div style="display:flex;flex-wrap:wrap;gap:2px;margin:6px 0">${fuels.join('')}</div>`;
+      else html += `<div style="font-size:0.75em;color:#78909c;margin:4px 0">Fuel types not specified</div>`;
+      if (props.brand) html += row('Brand', esc(props.brand));
+    }
+
+    // === Hospital ===
+    if (category === 'hospitals') {
+      if (props.emergency === 'yes') html += `<div style="font-size:0.82em;color:#ff5252;font-weight:600;margin:4px 0"><i class="fas fa-star-of-life"></i> Emergency Department</div>`;
+      if (props.healthcare) html += row('Type', esc(props.healthcare));
+      if (props.beds) html += row('Beds', props.beds);
+      if (props['healthcare:speciality']) html += row('Speciality', esc(props['healthcare:speciality']));
+    }
+
+    // === Border crossing ===
+    if (category === 'borderCrossings') {
+      if (props.border_type) html += row('Type', esc(props.border_type));
+      const modes = [];
+      if (props.foot !== 'no') modes.push('Pedestrian');
+      if (props.motorcar !== 'no') modes.push('Vehicle');
+      if (modes.length) html += row('Access', modes.join(', '));
+    }
+
+    // === Ford ===
+    if (category === 'fords') {
+      if (props.depth) html += row('Depth', props.depth + 'm');
+      if (props.surface) html += row('Surface', esc(props.surface));
+      if (props.width) html += row('Width', props.width + 'm');
+    }
+
+    // === Water sources ===
+    if (category === 'waterSources') {
+      if (props.drinking_water === 'yes') html += `<div style="font-size:0.82em;color:#00c853;font-weight:600;margin:4px 0"><i class="fas fa-check-circle"></i> Safe to drink</div>`;
+      else html += `<div style="font-size:0.82em;color:#ffab40;margin:4px 0"><i class="fas fa-exclamation-triangle"></i> Filter/treat required</div>`;
+      if (props.flow_rate) html += row('Flow', esc(props.flow_rate));
+      if (props.seasonal === 'yes') html += `<div style="font-size:0.75em;color:#ffab40;margin:2px 0"><i class="fas fa-calendar"></i> Seasonal — may be dry</div>`;
+    }
+
+    // === Pass/viewpoint elevation ===
+    if ((category === 'passes' || category === 'viewpoints') && props.ele) {
+      html += row('Elevation', Math.round(parseFloat(props.ele)) + 'm');
+    }
+
+    // === Embassy ===
+    if (category === 'embassies') {
+      if (props.country) html += row('Country', esc(props.country));
+      if (props['diplomatic']) html += row('Type', esc(props['diplomatic']));
+    }
+
+    // === ATM ===
+    if (category === 'atms') {
+      if (props.network || props.operator) html += row('Network', esc(props.network || props.operator));
+      const currencies = props.currency || props['currency:XCD'] || props['currency:USD'] || '';
+      if (currencies) html += row('Currency', esc(currencies));
+      if (props.cash_in === 'yes') html += `<div style="font-size:0.75em;color:#78909c">Accepts deposits</div>`;
+    }
+
+    // === Rest area ===
+    if (category === 'restAreas') {
+      const rest = [];
+      if (props.toilets === 'yes') rest.push(badge('toilet', 'Toilets'));
+      if (props.drinking_water === 'yes') rest.push(badge('droplet', 'Water'));
+      if (props.picnic_table === 'yes') rest.push(badge('utensils', 'Tables'));
+      if (props.shelter === 'yes') rest.push(badge('house', 'Shelter'));
+      if (rest.length) html += `<div style="display:flex;flex-wrap:wrap;gap:2px;margin:6px 0">${rest.join('')}</div>`;
+    }
+
+    // === Ferry ===
+    if (category === 'ferries') {
+      if (props.route) html += row('Route', esc(props.route));
+      if (props.duration) html += row('Duration', esc(props.duration));
+      if (props.motorcar === 'yes') html += `<div style="font-size:0.75em;color:#00c853"><i class="fas fa-car"></i> Vehicles accepted</div>`;
+    }
+
+    // === Shelters & Huts ===
+    if (category === 'shelters') {
+      const shelterFeats = [];
+      if (props.fireplace === 'yes') shelterFeats.push(badge('fire', 'Fireplace'));
+      if (props.drinking_water === 'yes') shelterFeats.push(badge('droplet', 'Water'));
+      if (props.toilets === 'yes') shelterFeats.push(badge('toilet', 'Toilets'));
+      if (props.bed === 'yes' || props.beds) shelterFeats.push(badge('bed', props.beds ? props.beds + ' beds' : 'Beds'));
+      if (shelterFeats.length) html += `<div style="display:flex;flex-wrap:wrap;gap:2px;margin:6px 0">${shelterFeats.join('')}</div>`;
+      if (props.ele) html += row('Elevation', Math.round(parseFloat(props.ele)) + 'm');
+      if (props.fee === 'no') html += row('Fee', '<span style="color:#00c853">Free</span>');
+      else if (props.charge) html += row('Fee', esc(props.charge));
+    }
+
+    // === Accommodation ===
+    if (category === 'accommodation') {
+      if (props.beds) html += row('Beds', props.beds);
+      if (props.rooms) html += row('Rooms', props.rooms);
+      if (props.stars) html += row('Rating', '★'.repeat(parseInt(props.stars)));
+      if (props.fee === 'no') html += row('Fee', '<span style="color:#00c853">Free</span>');
+      else if (props.charge) html += row('Fee', esc(props.charge));
+      if (props.ele) html += row('Elevation', Math.round(parseFloat(props.ele)) + 'm');
+      const accFeats = [];
+      if (props.internet_access === 'yes' || props.internet_access === 'wlan') accFeats.push(badge('wifi', 'WiFi'));
+      if (props.shower === 'yes') accFeats.push(badge('shower', 'Showers'));
+      if (props.kitchen === 'yes') accFeats.push(badge('utensils', 'Kitchen'));
+      if (accFeats.length) html += `<div style="display:flex;flex-wrap:wrap;gap:2px;margin:6px 0">${accFeats.join('')}</div>`;
+    }
+
+    // === Repair shops ===
+    if (category === 'repairs') {
+      const repairServices = [];
+      if (props['service:vehicle:tyres'] === 'yes') repairServices.push('Tyres');
+      if (props['service:vehicle:oil_change'] === 'yes') repairServices.push('Oil change');
+      if (props['service:vehicle:welding'] === 'yes') repairServices.push('Welding');
+      if (props['service:vehicle:electrical'] === 'yes') repairServices.push('Electrical');
+      if (repairServices.length) html += `<div style="font-size:0.75em;color:#b0bec5;margin:4px 0">${repairServices.join(' · ')}</div>`;
+    }
+
+    // === Common fields for all categories ===
+    if (props.opening_hours) html += row('Hours', esc(props.opening_hours));
+    if (props.phone || props['contact:phone']) html += row('Phone', esc(props.phone || props['contact:phone']));
+    if (props.description && category !== 'campsites') html += `<div style="font-size:0.75em;color:#b0bec5;margin:6px 0;line-height:1.4">${esc(props.description).substring(0, 200)}</div>`;
+    if (category === 'campsites' && props.description) html += `<div style="font-size:0.75em;color:#b0bec5;margin:6px 0;line-height:1.4">${esc(props.description).substring(0, 300)}</div>`;
+
+    // === Coordinates ===
+    html += `<div style="font-size:0.68em;color:#546e7a;margin-top:6px">${lat.toFixed(5)}, ${lon.toFixed(5)}</div>`;
+
+    // === Action links ===
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">`;
+    // Navigate
+    html += `<a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fas fa-directions"></i> Navigate</a>`;
+    // Google Maps
+    html += `<a href="https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lon},15z" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fab fa-google"></i> Maps</a>`;
+    // Website
+    const website = props.website || props.url || props['contact:website'];
+    if (website) html += `<a href="${website}" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fas fa-globe"></i> Website</a>`;
+    // Reviews search (campsites only)
+    if (category === 'campsites' && name !== 'Campsites') {
+      html += `<a href="https://www.google.com/search?q=${encodeURIComponent(name + ' campsite reviews')}" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fas fa-star"></i> Reviews</a>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`;
+    return html;
+  },
+
+  // Classify campsite type from OSM tags
+  _classifyCampsite(props) {
+    const name = (props.name || '').toLowerCase();
+    const op = (props.operator || '').toLowerCase();
+    if (props.backcountry === 'yes') return 'Backcountry Campsite';
+    if (props.group_only === 'yes') return 'Group Campsite';
+    if (name.includes('dispersed') || name.includes('primitive') || name.includes('wild camp')) return 'Dispersed Camping';
+    if (name.includes('blm') || op.includes('bureau of land management') || op.includes('blm')) return 'BLM Dispersed Camping';
+    if (op.includes('forest service') || op.includes('usfs') || op.includes('usda')) return 'USFS Campground';
+    if (op.includes('national park') || op.includes('nps')) return 'National Park Campground';
+    if (op.includes('state park')) return 'State Park Campground';
+    if (op.includes('department of conservation') || op.includes('doc')) return 'DOC Campsite';
+    if (props.tourism === 'caravan_site') return 'RV / Caravan Park';
+    if (props.fee === 'no') return 'Free Campsite';
+    if (name.includes('rv') || name.includes('caravan') || name.includes('holiday park')) return 'RV / Holiday Park';
+    if (name.includes('koa') || name.includes('jellystone')) return 'Commercial Campground';
+    return 'Campsite';
   },
 
   setupToggles() {
