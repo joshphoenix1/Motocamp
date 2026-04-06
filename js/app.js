@@ -454,6 +454,9 @@
   // ===== Offline Maps =====
   if (typeof OfflineMaps !== 'undefined') OfflineMaps.init();
 
+  // ===== Auth =====
+  if (typeof Auth !== 'undefined') Auth.init();
+
   // ===== Health Check =====
   HealthCheck.start(map);
 
