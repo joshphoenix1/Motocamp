@@ -928,80 +928,132 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw precipitation blobs if we have data
+    // Draw precipitation field if we have data
     if (precipGrid && precipGrid.grid) {
-      drawPrecipBlobs(ctx, cx, cy, radius, size);
+      drawPrecipField(ctx, cx, cy, radius, size);
     }
 
     ctx.restore();
     drawRadarOverlay(ctx, cx, cy, radius, size);
   }
 
-  function drawPrecipBlobs(ctx, cx, cy, radius, size) {
-    const grid = precipGrid.grid;
-    const half = Math.floor(PRECIP_GRID_SIZE / 2);
+  // Ventusky-style color ramp: precipitation mm → [r, g, b, a]
+  // Smooth gradient from transparent → blue → cyan → green → yellow → orange → red → magenta
+  const PRECIP_COLORS = [
+    { val: 0,    r: 0,   g: 0,   b: 0,   a: 0   },
+    { val: 0.05, r: 30,  g: 80,  b: 180, a: 0.3 },  // dark blue
+    { val: 0.2,  r: 40,  g: 130, b: 220, a: 0.5 },  // blue
+    { val: 0.5,  r: 30,  g: 180, b: 220, a: 0.6 },  // cyan
+    { val: 1.0,  r: 40,  g: 200, b: 100, a: 0.7 },  // green
+    { val: 2.0,  r: 160, g: 220, b: 40,  a: 0.75 }, // lime
+    { val: 4.0,  r: 240, g: 220, b: 30,  a: 0.8 },  // yellow
+    { val: 7.0,  r: 250, g: 160, b: 20,  a: 0.85 }, // orange
+    { val: 12,   r: 240, g: 50,  b: 30,  a: 0.9 },  // red
+    { val: 20,   r: 200, g: 30,  b: 160, a: 0.95 }, // magenta
+    { val: 40,   r: 160, g: 20,  b: 200, a: 1.0 },  // purple
+  ];
 
-    // Degrees per km at rider's latitude
-    const kmPerDegLat = 111.32;
-    const kmPerDegLng = 111.32 * Math.cos(currentLat * Math.PI / 180);
-    const pxPerKm = radius / RADAR_RANGE_KM;
-
-    // Heading rotation
-    const headingRad = currentHeading ? -currentHeading * Math.PI / 180 : 0;
-
-    for (let i = 0; i < PRECIP_GRID_SIZE; i++) {
-      for (let j = 0; j < PRECIP_GRID_SIZE; j++) {
-        const precip = grid[i][j];
-        if (precip <= 0) continue; // show even trace amounts
-
-        // Grid point position relative to current rider position (in km)
-        const gridIdx = i * PRECIP_GRID_SIZE + j;
-        const ptLat = precipGrid.lats[gridIdx];
-        const ptLng = precipGrid.lons[gridIdx];
-        const dxKm = (ptLng - currentLng) * kmPerDegLng;
-        const dyKm = (ptLat - currentLat) * kmPerDegLat;
-
-        // Convert to canvas pixels
-        let px = dxKm * pxPerKm;
-        let py = -dyKm * pxPerKm; // y-axis inverted on canvas
-
-        // Rotate for heading-up
-        if (headingRad) {
-          const cos = Math.cos(headingRad), sin = Math.sin(headingRad);
-          const rpx = px * cos - py * sin;
-          const rpy = px * sin + py * cos;
-          px = rpx;
-          py = rpy;
-        }
-
-        const screenX = cx + px;
-        const screenY = cy + py;
-
-        // Skip if outside circle
-        const dist = Math.sqrt(px * px + py * py);
-        if (dist > radius) continue;
-
-        // Color by intensity — opaque enough to pop on the dark background
-        let color;
-        if (precip >= 10) color = 'rgba(255,50,50,0.9)';        // heavy
-        else if (precip >= 5) color = 'rgba(255,165,0,0.8)';     // moderate-heavy
-        else if (precip >= 2) color = 'rgba(255,220,50,0.7)';    // moderate
-        else if (precip >= 0.5) color = 'rgba(80,220,120,0.65)'; // light
-        else color = 'rgba(80,200,255,0.55)';                     // drizzle
-
-        // Blob size — large enough to overlap and form a continuous rain field
-        const blobR = Math.max(16, Math.min(30, 14 + precip * 2.5)) * (size / 150);
-
-        // Soft radial gradient blob with solid core
-        const grad = ctx.createRadialGradient(screenX, screenY, blobR * 0.3, screenX, screenY, blobR);
-        grad.addColorStop(0, color);
-        grad.addColorStop(1, color.replace(/[\d.]+\)$/, '0)'));
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(screenX, screenY, blobR, 0, Math.PI * 2);
-        ctx.fill();
+  function precipToColor(val) {
+    if (val <= 0) return [0, 0, 0, 0];
+    const stops = PRECIP_COLORS;
+    // Find bracketing stops
+    for (let i = 1; i < stops.length; i++) {
+      if (val <= stops[i].val) {
+        const lo = stops[i - 1], hi = stops[i];
+        const t = (val - lo.val) / (hi.val - lo.val);
+        return [
+          lo.r + t * (hi.r - lo.r),
+          lo.g + t * (hi.g - lo.g),
+          lo.b + t * (hi.b - lo.b),
+          lo.a + t * (hi.a - lo.a)
+        ];
       }
     }
+    const last = stops[stops.length - 1];
+    return [last.r, last.g, last.b, last.a];
+  }
+
+  // Bilinear interpolation of precipitation at a point in grid-space
+  function interpolatePrecip(gy, gx) {
+    const grid = precipGrid.grid;
+    const gi = Math.floor(gy), gj = Math.floor(gx);
+    if (gi < 0 || gi >= PRECIP_GRID_SIZE - 1 || gj < 0 || gj >= PRECIP_GRID_SIZE - 1) return 0;
+    const ty = gy - gi, tx = gx - gj;
+    return (
+      grid[gi][gj]       * (1 - ty) * (1 - tx) +
+      grid[gi][gj + 1]   * (1 - ty) * tx +
+      grid[gi + 1][gj]   * ty       * (1 - tx) +
+      grid[gi + 1][gj + 1] * ty     * tx
+    );
+  }
+
+  function drawPrecipField(ctx, cx, cy, radius, size) {
+    // Render to a small offscreen canvas, then scale up for smooth look
+    const RES = 80; // 80x80 interpolated field
+    const off = document.createElement('canvas');
+    off.width = RES;
+    off.height = RES;
+    const octx = off.getContext('2d');
+    const imgData = octx.createImageData(RES, RES);
+    const data = imgData.data;
+
+    const kmPerDegLat = 111.32;
+    const kmPerDegLng = 111.32 * Math.cos(currentLat * Math.PI / 180);
+
+    // Grid point spacing in km
+    const gridStepLatKm = PRECIP_SPACING_DEG * kmPerDegLat;
+    const lngSpacing = PRECIP_SPACING_DEG / Math.cos(precipGrid.centerLat * Math.PI / 180);
+    const gridStepLngKm = lngSpacing * kmPerDegLng;
+
+    // Center of grid (index 3,3 for a 7x7 grid)
+    const half = Math.floor(PRECIP_GRID_SIZE / 2);
+
+    // Heading rotation
+    const headingRad = currentHeading ? currentHeading * Math.PI / 180 : 0;
+    const cosH = Math.cos(headingRad), sinH = Math.sin(headingRad);
+
+    // Offset from grid center to current rider position (in grid-index units)
+    const riderOffsetLat = (currentLat - precipGrid.centerLat) / PRECIP_SPACING_DEG;
+    const riderOffsetLng = (currentLng - precipGrid.centerLng) / lngSpacing;
+
+    for (let py = 0; py < RES; py++) {
+      for (let px = 0; px < RES; px++) {
+        // Canvas pixel to km from rider (center of offscreen = rider position)
+        const kmX = ((px / RES) * 2 - 1) * RADAR_RANGE_KM;
+        const kmY = ((py / RES) * 2 - 1) * RADAR_RANGE_KM;
+
+        // Skip outside circle
+        if (kmX * kmX + kmY * kmY > RADAR_RANGE_KM * RADAR_RANGE_KM) {
+          const idx = (py * RES + px) * 4;
+          data[idx] = data[idx + 1] = data[idx + 2] = data[idx + 3] = 0;
+          continue;
+        }
+
+        // Rotate from heading-up screen space to north-up world space
+        const worldKmX = kmX * cosH - kmY * sinH;
+        const worldKmY = kmX * sinH + kmY * cosH;
+
+        // World km to grid index (grid center is at index half,half)
+        const gx = half + riderOffsetLng + worldKmX / gridStepLngKm;
+        const gy = half + riderOffsetLat - worldKmY / gridStepLatKm; // lat increases north, grid row increases south
+
+        const val = interpolatePrecip(gy, gx);
+        const [r, g, b, a] = precipToColor(val);
+
+        const idx = (py * RES + px) * 4;
+        data[idx]     = r;
+        data[idx + 1] = g;
+        data[idx + 2] = b;
+        data[idx + 3] = a * 255;
+      }
+    }
+
+    octx.putImageData(imgData, 0, 0);
+
+    // Draw scaled-up offscreen canvas onto main canvas with smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(off, cx - radius, cy - radius, radius * 2, radius * 2);
   }
 
   function drawRadarOverlay(ctx, cx, cy, radius, size) {
