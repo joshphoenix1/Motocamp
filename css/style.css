@@ -746,22 +746,22 @@ body.dashboard-active {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 0;
   overflow: hidden;
 }
 
 .dash-close-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 100000;
-  width: 52px;
-  height: 52px;
+  top: 6px;
+  right: 6px;
+  z-index: 100002;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--bg-tertiary);
   background: rgba(26,38,50,0.8);
   color: var(--text-primary);
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -770,33 +770,33 @@ body.dashboard-active {
 }
 .dash-close-btn:hover { color: var(--danger); }
 
-/* Dashboard layout */
+/* Dashboard layout — landscape-first: top bar, 3-col main, bottom bar */
 .dash-layout {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
-  max-width: 600px;
   overflow: hidden;
+  position: relative;
 }
 
 /* GPS Status indicator */
 .dash-gps-status {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 6px;
+  left: 6px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  padding: 6px 12px;
+  gap: 6px;
+  font-size: 0.7rem;
+  padding: 4px 10px;
   border-radius: 20px;
   background: rgba(26,38,50,0.8);
   border: 1px solid var(--bg-tertiary);
   z-index: 100001;
 }
 
-.dash-gps-status i { font-size: 0.7rem; }
+.dash-gps-status i { font-size: 0.65rem; }
 
 .gps-waiting { color: #ff9800; }
 .gps-waiting i { color: #ff9800; animation: gps-pulse 1.5s infinite; }
@@ -812,62 +812,24 @@ body.dashboard-active {
   50% { opacity: 0.3; }
 }
 
-/* Speed zone — takes up most of the screen */
-.dash-speed-zone {
-  flex: 1;
+/* ── Top instrument bar ── */
+.dash-top-bar {
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.dash-speed-num {
-  font-size: min(42vw, 36vh);
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.dash-speed-unit {
-  font-size: 1.2rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  margin-top: -4px;
-}
-
-.dash-speed-max {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 8px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Altitude zone — larger section with chart */
-.dash-altitude-zone {
-  flex: 0 0 auto;
-  padding: 10px 16px;
-  border-top: 1px solid var(--bg-tertiary);
+  gap: clamp(16px, 4vw, 40px);
+  padding: 10px 60px;
+  background: rgba(10,14,20,0.9);
   border-bottom: 1px solid var(--bg-tertiary);
-  overflow: hidden;
   min-width: 0;
-}
-
-.dash-alt-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: clamp(8px, 2vw, 20px);
-  margin-bottom: 8px;
-  min-width: 0;
+  z-index: 2;
+  overflow: visible;
 }
 
 .dash-alt-reading {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   white-space: nowrap;
   min-width: 0;
@@ -876,12 +838,11 @@ body.dashboard-active {
 
 .dash-alt-reading i {
   color: var(--accent);
-  font-size: 0.85rem;
-  align-self: center;
+  font-size: 1rem;
 }
 
 .dash-alt-value {
-  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
@@ -889,17 +850,16 @@ body.dashboard-active {
 }
 
 .dash-alt-unit {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
 .dash-alt-reading #dash-heading-value {
-  font-size: clamp(1rem, 4vw, 1.4rem);
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
   font-weight: 600;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
-
 
 .dash-info-unit {
   font-size: 0.8rem;
@@ -907,62 +867,176 @@ body.dashboard-active {
   margin-left: 2px;
 }
 
-/* Trip stats strip */
-.dash-stats-strip {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  padding: 6px 16px;
-  border-bottom: 1px solid var(--bg-tertiary);
-}
-
-.dash-stat {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-  font-variant-numeric: tabular-nums;
-}
-
-.dash-stat i {
-  color: var(--text-muted);
-  font-size: 0.65rem;
+/* Pressure trend arrow */
+.dash-pressure-arrow {
+  transition: transform 0.3s ease;
   align-self: center;
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 
-.dash-stat span:not(.dash-stat-unit) {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  min-width: 2.5ch;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+/* Wind direction arrow */
+.dash-wind-arrow {
+  transition: transform 0.5s ease-out;
+  align-self: center;
+  flex-shrink: 0;
+  margin-left: 1px;
 }
 
-.dash-stat-unit {
-  font-size: 0.65rem;
+/* ── Main 3-column area ── */
+.dash-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Left column: radar */
+.dash-left-col {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  gap: 4px;
+}
+
+.dash-radar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text-primary);
+}
+
+.dash-radar-wrap {
+  position: relative;
+  width: min(190px, 48vh);
+  height: min(190px, 48vh);
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(20,28,38,0.6);
+}
+
+.dash-radar-canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.dash-radar-label {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
   color: var(--text-muted);
+  background: rgba(10,14,20,0.85);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
-/* Compass arrow zone — bottom quarter */
-.dash-compass-zone {
-  flex: 0 0 25%;
+/* Centre column: speed + lean */
+.dash-centre-col {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  padding: 8px 16px;
+  min-width: 0;
+  position: relative;
+}
+
+.dash-speed-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.dash-speed-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.dash-speed-num {
+  font-size: min(28vw, 38vh);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-speed-unit {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-top: -2px;
+}
+
+.dash-speed-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.dash-speed-max {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lean angle arcs */
+.dash-lean-arcs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dash-lean-readout {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+}
+
+/* Right column: compass */
+.dash-right-col {
+  flex: 0 0 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.dash-compass-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
 }
 
 .dash-compass-arrow-wrap {
   flex-shrink: 0;
-  width: min(140px, 22vh);
-  height: min(140px, 22vh);
+  width: min(90px, 24vh);
+  height: min(90px, 24vh);
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 18px rgba(0,200,83,0.55));
+  filter: drop-shadow(0 0 14px rgba(0,200,83,0.5));
 }
 
 .dash-compass-arrow {
@@ -980,52 +1054,134 @@ body.dashboard-active {
 .dash-compass-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
 }
 
 .dash-compass-target {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--text-primary);
   font-weight: 600;
-  max-width: 240px;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
 }
 
 .dash-compass-readout {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .dash-compass-num {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .dash-compass-brg {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Bottom bar: elevation + stats ── */
+.dash-bottom-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  background: rgba(10,14,20,0.9);
+  border-top: 1px solid var(--bg-tertiary);
+  min-height: 36px;
+  z-index: 2;
+}
+
+/* Elevation sparkline strip */
+.dash-elevation-strip {
+  flex: 0 0 auto;
+  width: 40%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-right: 1px solid var(--bg-tertiary);
+  height: 100%;
+}
+
+.dash-elevation-canvas {
+  flex: 1;
+  height: 32px;
+  min-width: 0;
+}
+
+.dash-elevation-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-elevation-stats .elev-gain { color: var(--accent); }
+.dash-elevation-stats .elev-max { color: var(--text-secondary); }
+
+/* Trip stats strip */
+.dash-stats-strip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 4px 12px;
+  gap: 12px;
+}
+
+.dash-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat i {
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  align-self: center;
+}
+
+.dash-stat span:not(.dash-stat-unit) {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 2.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-unit {
+  font-size: 0.6rem;
+  color: var(--text-muted);
 }
 
 /* Address input popover */
 .dash-compass-input {
   position: fixed;
   left: 50%;
-  bottom: 20%;
-  transform: translateX(-50%);
-  width: min(420px, 92vw);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 80vw);
   background: rgba(10,14,20,0.96);
   border: 1px solid var(--bg-tertiary);
   border-radius: 10px;
   padding: 12px;
-  z-index: 10;
+  z-index: 100003;
   box-shadow: 0 8px 28px rgba(0,0,0,0.6);
 }
 
@@ -1041,7 +1197,7 @@ body.dashboard-active {
 }
 
 .dash-compass-results {
-  max-height: 200px;
+  max-height: 180px;
   overflow-y: auto;
   margin-top: 8px;
 }
@@ -1080,61 +1236,30 @@ body.dashboard-active {
   background: var(--bg-tertiary);
 }
 
-/* Desktop: cap the speed font size */
-@media (min-width: 769px) {
-  .dash-speed-num { font-size: 18rem; }
+/* ── Portrait fallback ── */
+@media (orientation: portrait) {
+  .dash-top-bar { padding: 6px 50px 6px 16px; gap: 10px; flex-wrap: wrap; }
+  .dash-main { flex-direction: column; }
+  .dash-left-col { flex: 0 0 auto; order: 3; padding: 4px; }
+  .dash-left-col .dash-radar-wrap { width: 80px; height: 80px; }
+  .dash-centre-col { flex: 1; }
+  .dash-speed-num { font-size: min(42vw, 30vh); }
+  .dash-right-col { flex: 0 0 auto; order: 2; padding: 4px; }
+  .dash-right-col .dash-compass-zone { flex-direction: row; gap: 16px; }
+  .dash-right-col .dash-compass-arrow-wrap { width: min(80px, 14vh); height: min(80px, 14vh); }
+  .dash-right-col .dash-compass-info { align-items: flex-start; }
+  .dash-bottom-bar { flex-direction: column; }
+  .dash-elevation-strip { width: 100%; border-right: none; border-bottom: 1px solid var(--bg-tertiary); }
+  .dash-stats-strip { width: 100%; }
 }
 
-/* Landscape mobile */
-@media (max-height: 500px) and (orientation: landscape) {
-  #dashboard-overlay { padding: 6px; }
-  .dash-layout { flex-direction: row; flex-wrap: wrap; max-width: 100%; }
-  .dash-speed-zone { flex: 1 1 50%; }
-  .dash-speed-num { font-size: 45vh; }
-  .dash-speed-unit { font-size: 1.8rem; }
-  .dash-speed-max { font-size: 1.2rem; }
-  .dash-altitude-zone {
-    position: absolute;
-    bottom: 60px;
-    left: 0;
-    width: 50%;
-    border: none;
-    padding: 0;
-    background: rgba(10,14,20,0.85);
-    border-radius: 0;
-    padding: 8px 14px;
-    box-sizing: border-box;
-  }
-  .dash-alt-header { gap: 20px; margin-bottom: 0; }
-  .dash-alt-value { font-size: 1.8rem; }
-  .dash-alt-unit { font-size: 1rem; }
-  .dash-alt-reading i { font-size: 1.1rem; }
-  .dash-alt-reading #dash-heading-value { font-size: 1.5rem; white-space: nowrap; }
-  .dash-stats-strip {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(10,14,20,0.85);
-    border-radius: 8px;
-    padding: 6px 16px;
-    border: none;
-    gap: 20px;
-  }
-  .dash-stat span:not(.dash-stat-unit) { font-size: 1.1rem; }
-  .dash-stat-unit { font-size: 0.75rem; }
-  .dash-stat i { font-size: 0.75rem; }
-  .dash-compass-zone {
-    flex: 0 0 45%;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .dash-compass-arrow-wrap { width: min(130px, 30vh); height: min(130px, 30vh); }
-  .dash-compass-readout { gap: 14px; }
-  .dash-compass-num { font-size: 2rem; }
-  .dash-compass-target { max-width: 80vw; }
-  .dash-close-btn { width: 44px; height: 44px; top: 8px; right: 8px; font-size: 1.2rem; }
-  .dash-gps-status { top: 8px; left: 8px; font-size: 0.8rem; padding: 5px 10px; }
+/* Desktop: cap the speed font size */
+@media (min-width: 769px) and (orientation: landscape) {
+  .dash-speed-num { font-size: min(28vw, 38vh); }
+  .dash-left-col { flex: 0 0 160px; }
+  .dash-right-col { flex: 0 0 220px; }
+  .dash-radar-wrap { width: 130px; height: 130px; }
+  .dash-compass-arrow-wrap { width: min(110px, 28vh); height: min(110px, 28vh); }
 }
 
 /* ===== Hidden utility ===== */
