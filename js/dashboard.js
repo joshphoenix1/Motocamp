@@ -943,19 +943,19 @@
         const dist = Math.sqrt(px * px + py * py);
         if (dist > radius) continue;
 
-        // Color by intensity
+        // Color by intensity — opaque enough to pop on the dark background
         let color;
-        if (precip >= 10) color = 'rgba(255,50,50,0.7)';       // heavy
-        else if (precip >= 5) color = 'rgba(255,165,0,0.6)';    // moderate-heavy
-        else if (precip >= 2) color = 'rgba(255,220,50,0.5)';   // moderate
-        else if (precip >= 0.5) color = 'rgba(80,200,120,0.45)'; // light
-        else color = 'rgba(80,180,220,0.35)';                    // drizzle
+        if (precip >= 10) color = 'rgba(255,50,50,0.9)';        // heavy
+        else if (precip >= 5) color = 'rgba(255,165,0,0.8)';     // moderate-heavy
+        else if (precip >= 2) color = 'rgba(255,220,50,0.7)';    // moderate
+        else if (precip >= 0.5) color = 'rgba(80,220,120,0.65)'; // light
+        else color = 'rgba(80,200,255,0.55)';                     // drizzle
 
-        // Blob size scales with intensity
-        const blobR = Math.max(6, Math.min(14, 6 + precip * 1.5)) * (size / 150);
+        // Blob size — large enough to overlap and form a continuous rain field
+        const blobR = Math.max(12, Math.min(22, 10 + precip * 2)) * (size / 150);
 
-        // Soft radial gradient blob
-        const grad = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, blobR);
+        // Soft radial gradient blob with solid core
+        const grad = ctx.createRadialGradient(screenX, screenY, blobR * 0.3, screenX, screenY, blobR);
         grad.addColorStop(0, color);
         grad.addColorStop(1, color.replace(/[\d.]+\)$/, '0)'));
         ctx.fillStyle = grad;
