@@ -246,6 +246,19 @@
       if (window.innerWidth <= 768) sidebar.classList.add('open');
     };
 
+    // Snap a point to the nearest road via OSRM
+    const snapToRoad = async (lat, lon) => {
+      try {
+        const resp = await fetch(`https://router.project-osrm.org/nearest/v1/driving/${lon},${lat}?number=1`);
+        const data = await resp.json();
+        if (data.code === 'Ok' && data.waypoints?.length) {
+          const [sLon, sLat] = data.waypoints[0].location;
+          return { lat: sLat, lon: sLon };
+        }
+      } catch (e) { /* fall through */ }
+      return { lat, lon };
+    };
+
     // Reverse geocode the location
     const reverseGeocode = async (lat, lon) => {
       try {
@@ -257,32 +270,33 @@
 
     if (action === 'directions-from') {
       switchToRoute();
-      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
+      const snapped = await snapToRoad(ctxLatLng.lat, ctxLatLng.lng);
+      const name = await reverseGeocode(snapped.lat, snapped.lon);
       const input = document.getElementById('route-start');
       input.value = name;
-      input.dataset.lat = ctxLatLng.lat;
-      input.dataset.lon = ctxLatLng.lng;
-      // Auto-plan if both start and end are set
+      input.dataset.lat = snapped.lat;
+      input.dataset.lon = snapped.lon;
       const endInput = document.getElementById('route-end');
       if (endInput.dataset.lat) document.getElementById('plan-route').click();
     }
 
     else if (action === 'directions-to') {
       switchToRoute();
-      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
+      const snapped = await snapToRoad(ctxLatLng.lat, ctxLatLng.lng);
+      const name = await reverseGeocode(snapped.lat, snapped.lon);
       const input = document.getElementById('route-end');
       input.value = name;
-      input.dataset.lat = ctxLatLng.lat;
-      input.dataset.lon = ctxLatLng.lng;
-      // Auto-plan if both start and end are set
+      input.dataset.lat = snapped.lat;
+      input.dataset.lon = snapped.lon;
       const startInput = document.getElementById('route-start');
       if (startInput.dataset.lat) document.getElementById('plan-route').click();
     }
 
     else if (action === 'add-waypoint') {
       switchToRoute();
-      const name = await reverseGeocode(ctxLatLng.lat, ctxLatLng.lng);
-      RoutePlanner.addAsWaypoint(ctxLatLng.lat, ctxLatLng.lng, name);
+      const snapped = await snapToRoad(ctxLatLng.lat, ctxLatLng.lng);
+      const name = await reverseGeocode(snapped.lat, snapped.lon);
+      RoutePlanner.addAsWaypoint(snapped.lat, snapped.lon, name);
     }
 
     else if (action === 'whats-here') {

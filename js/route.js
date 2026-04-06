@@ -208,9 +208,11 @@ const RoutePlanner = {
         router: L.Routing.osrmv1({
           serviceUrl: 'https://router.project-osrm.org/route/v1',
           profile: 'car',
-          useHints: false
+          useHints: false,
+          allowUTurns: true,
         }),
         routeWhileDragging: true,
+        waypointMode: 'snap',
         alternatives: true,
         lineOptions: {
           styles: [
