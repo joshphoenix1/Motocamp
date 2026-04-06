@@ -317,6 +317,21 @@ const RoutePlanner = {
       html += '</div>';
     }
 
+    // === Route Warnings ===
+    const warnings = await this.generateRouteWarnings(points, routeCoords);
+    if (warnings.length > 0) {
+      html += `<div style="margin-bottom:12px">`;
+      html += `<h4 style="font-size:0.78rem;color:#ff5252;margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Warnings</h4>`;
+      for (const w of warnings) {
+        const iconColor = w.severity === 'high' ? '#ff5252' : '#ffab40';
+        html += `<div style="display:flex;gap:8px;align-items:flex-start;padding:8px;background:rgba(255,82,82,0.06);border-radius:var(--radius);margin-bottom:4px;border-left:3px solid ${iconColor}">
+          <i class="fas fa-${w.icon}" style="color:${iconColor};margin-top:2px;flex-shrink:0"></i>
+          <div style="font-size:0.78rem"><strong>${w.title}</strong><br><span style="color:var(--text-muted)">${w.detail}</span></div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
     // Fetch weather for each point
     html += '<div class="route-segments">';
 
@@ -403,6 +418,114 @@ const RoutePlanner = {
         this.renderElevationProfile(elData, elContainer);
       }
     }
+  },
+
+  async generateRouteWarnings(points, routeCoords) {
+    const warnings = [];
+
+    // 1. Check weather at each waypoint for serious conditions
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      try {
+        const wx = await Weather.fetchPointWeather(p.lat, p.lng);
+        if (!wx?.daily) continue;
+        const dayIdx = Math.min(i, 6);
+        const code = wx.daily.weather_code[dayIdx];
+        const wind = wx.daily.wind_speed_10m_max[dayIdx];
+        const precip = wx.daily.precipitation_sum[dayIdx];
+        const tempMin = wx.daily.temperature_2m_min[dayIdx];
+        const tempMax = wx.daily.temperature_2m_max[dayIdx];
+        const label = i === 0 ? 'Start' : i === points.length - 1 ? 'Destination' : `Stop ${i}`;
+
+        // Heavy rain/snow (codes 65, 75, 82, 95, 96, 99)
+        if ([65, 75, 82, 95, 96, 99].includes(code)) {
+          const wxInfo = Utils.getWeatherInfo(code);
+          warnings.push({ severity: 'high', icon: 'cloud-showers-heavy', title: `${wxInfo.desc} at ${label}`, detail: `${precip.toFixed(1)}mm expected. Consider delaying or rerouting.` });
+        }
+        // Moderate rain/snow (codes 63, 73, 81)
+        else if ([63, 73, 81].includes(code) && precip > 10) {
+          warnings.push({ severity: 'medium', icon: 'cloud-rain', title: `Heavy precipitation at ${label}`, detail: `${precip.toFixed(1)}mm expected. Roads may be slippery.` });
+        }
+
+        // High wind (> 15 m/s = ~54 km/h)
+        if (wind > 15) {
+          warnings.push({ severity: wind > 20 ? 'high' : 'medium', icon: 'wind', title: `Strong winds at ${label}`, detail: `Gusts up to ${Math.round(wind * 3.6)} km/h. Dangerous for motorcycles and high-profile vehicles.` });
+        }
+
+        // Freezing conditions
+        if (tempMin < 0) {
+          warnings.push({ severity: tempMin < -5 ? 'high' : 'medium', icon: 'snowflake', title: `Freezing conditions at ${label}`, detail: `Low of ${Math.round(tempMin)}°C. Risk of ice on roads.` });
+        }
+
+        // Extreme heat
+        if (tempMax > 40) {
+          warnings.push({ severity: 'high', icon: 'temperature-high', title: `Extreme heat at ${label}`, detail: `${Math.round(tempMax)}°C expected. Carry extra water, risk of overheating.` });
+        }
+      } catch (e) { /* skip failed weather */ }
+    }
+
+    // 2. Check for border crossings near the route
+    if (routeCoords && routeCoords.length > 0 && typeof OverpassLoader !== 'undefined') {
+      try {
+        const bounds = L.latLngBounds(routeCoords);
+        const pad = 0.1;
+        const features = await OverpassLoader.loadCategory(
+          'borderCrossings',
+          bounds.getSouth() - pad, bounds.getWest() - pad,
+          bounds.getNorth() + pad, bounds.getEast() + pad
+        );
+
+        // Find border crossings within 5km of the route
+        const PROXIMITY = 5; // km
+        const sampleStep = Math.max(1, Math.floor(routeCoords.length / 100));
+        for (const f of features) {
+          const [bLon, bLat] = f.geometry.coordinates;
+          let nearRoute = false;
+          for (let i = 0; i < routeCoords.length; i += sampleStep) {
+            if (Utils.distance(routeCoords[i].lat, routeCoords[i].lng, bLat, bLon) < PROXIMITY) {
+              nearRoute = true;
+              break;
+            }
+          }
+          if (nearRoute) {
+            const name = f.properties.name || 'Border Crossing';
+            const hours = f.properties.opening_hours || 'Hours unknown';
+            warnings.push({ severity: 'medium', icon: 'passport', title: `Border crossing: ${name}`, detail: `${hours}. Check visa and vehicle documentation requirements.` });
+          }
+        }
+      } catch (e) { /* skip if Overpass fails */ }
+    }
+
+    // 3. Check for fords near the route
+    if (routeCoords && routeCoords.length > 0 && typeof OverpassLoader !== 'undefined') {
+      try {
+        const bounds = L.latLngBounds(routeCoords);
+        const pad = 0.05;
+        const features = await OverpassLoader.loadCategory(
+          'fords',
+          bounds.getSouth() - pad, bounds.getWest() - pad,
+          bounds.getNorth() + pad, bounds.getEast() + pad
+        );
+
+        const PROXIMITY = 1; // km — fords need to be right on the route
+        const sampleStep = Math.max(1, Math.floor(routeCoords.length / 100));
+        let fordCount = 0;
+        for (const f of features) {
+          const [fLon, fLat] = f.geometry.coordinates;
+          for (let i = 0; i < routeCoords.length; i += sampleStep) {
+            if (Utils.distance(routeCoords[i].lat, routeCoords[i].lng, fLat, fLon) < PROXIMITY) {
+              fordCount++;
+              break;
+            }
+          }
+        }
+        if (fordCount > 0) {
+          warnings.push({ severity: 'medium', icon: 'water', title: `${fordCount} river crossing${fordCount > 1 ? 's' : ''} on route`, detail: `Check water levels before crossing. Conditions vary seasonally.` });
+        }
+      } catch (e) { /* skip */ }
+    }
+
+    return warnings;
   },
 
   buildGoogleMapsURL(points) {

@@ -15,11 +15,11 @@
   });
   window.map = map;
 
-  // Try to center on user's location
+  // Center on user's location (~100km radius = zoom 9)
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude, longitude } = pos.coords;
-    homePosition = { center: [latitude, longitude], zoom: 10 };
-    map.flyTo(homePosition.center, homePosition.zoom, { duration: 1.5 });
+    homePosition = { center: [latitude, longitude], zoom: 9 };
+    map.setView(homePosition.center, homePosition.zoom);
   }, () => {}, { enableHighAccuracy: false, timeout: 5000 });
 
   // Add base tile layer immediately so the map shows
