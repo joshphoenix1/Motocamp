@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Long Way Home — Logo Concepts</title>
+  <title>MotorCamp — Mountain Trail Logo Variants</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0a0f1a; color: #e0e0e0; font-family: 'Inter', -apple-system, sans-serif; padding: 24px; }
     h1 { color: #00c853; margin-bottom: 8px; font-size: 1.5rem; }
     p.sub { color: #78909c; margin-bottom: 32px; font-size: 0.9rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
     .card {
       background: #111827; border-radius: 16px; padding: 32px; text-align: center;
       border: 2px solid transparent; cursor: pointer; transition: all 0.3s;
@@ -17,156 +17,83 @@
     .card:hover { border-color: #00c853; transform: translateY(-2px); }
     .card.selected { border-color: #00c853; box-shadow: 0 0 20px rgba(0,200,83,0.2); }
     .card h3 { margin: 16px 0 6px; font-size: 1.1rem; }
-    .card .desc { color: #78909c; font-size: 0.8rem; margin-bottom: 12px; }
-    .logo-wrap { display: flex; justify-content: center; align-items: center; min-height: 140px; }
+    .card .desc { color: #78909c; font-size: 0.8rem; margin-bottom: 12px; line-height: 1.5; }
+    .logo-wrap { display: flex; justify-content: center; align-items: center; min-height: 160px; }
     .preview-row { display: flex; gap: 16px; justify-content: center; align-items: flex-end; margin-top: 16px; }
     .preview-row .icon { border-radius: 20%; overflow: hidden; }
-    .tagline { color: #b0bec5; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+    .bg-row { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+    .bg-row > div { border-radius: 12px; padding: 12px; }
+    .dark-bg { background: #0a0f1a; }
+    .light-bg { background: #f0f0f0; }
     .colors { display: flex; gap: 6px; justify-content: center; margin-top: 12px; }
     .swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); }
-    .dark-bg { background: #1a1a2e; padding: 20px; border-radius: 12px; }
-    .light-bg { background: #f5f5f5; padding: 20px; border-radius: 12px; }
   </style>
 </head>
 <body>
-  <h1>Long Way Home — Logo Concepts</h1>
-  <p class="sub">Click to select. Each shows the icon mark, wordmark, and how it looks at app-icon size.</p>
+  <h1>MotorCamp — Mountain Trail Variants</h1>
+  <p class="sub">Refining the Mountain Trail concept. More realistic ridgelines, depth, and character. Click to select.</p>
 
   <div class="grid">
 
-    <!-- Concept 1: Road & Horizon -->
+    <!-- Variant A: Layered Ridgeline -->
     <div class="card" onclick="this.classList.toggle('selected')">
       <div class="logo-wrap">
-        <svg width="240" height="120" viewBox="0 0 240 120">
-          <!-- Road converging to horizon -->
-          <path d="M80,110 L110,40 L130,40 L160,110 Z" fill="#1a1a2e" stroke="#00c853" stroke-width="2"/>
-          <!-- Center line dashes -->
-          <line x1="120" y1="105" x2="120" y2="90" stroke="#ffab40" stroke-width="2" stroke-dasharray="4,6"/>
-          <line x1="120" y1="82" x2="120" y2="70" stroke="#ffab40" stroke-width="2"/>
-          <line x1="120" y1="62" x2="120" y2="54" stroke="#ffab40" stroke-width="1.5"/>
-          <!-- Sun/moon at horizon -->
-          <circle cx="120" cy="40" r="14" fill="none" stroke="#00c853" stroke-width="2"/>
-          <circle cx="120" cy="40" r="6" fill="#00c853"/>
-          <!-- Stars -->
-          <circle cx="85" cy="25" r="1.5" fill="#b0bec5"/>
-          <circle cx="155" cy="20" r="1" fill="#b0bec5"/>
-          <circle cx="100" cy="15" r="1.2" fill="#b0bec5"/>
+        <svg width="280" height="150" viewBox="0 0 280 150">
+          <!-- Far ridge (faintest) -->
+          <path d="M30,82 L58,52 L72,60 L95,38 L118,62 L135,50 L158,68 L180,48 L200,60 L225,42 L250,82"
+                fill="none" stroke="#00c853" stroke-width="1" opacity="0.2"/>
+          <!-- Mid ridge -->
+          <path d="M20,82 L48,48 L65,58 L88,28 L108,52 L125,40 L148,60 L170,35 L195,55 L218,30 L248,62 L260,82"
+                fill="none" stroke="#00c853" stroke-width="1.5" opacity="0.4"/>
+          <!-- Snow caps on mid ridge -->
+          <path d="M85,32 L88,28 L91,32" fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+          <path d="M215,34 L218,30 L221,34" fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+          <!-- Main ridge (front, boldest) -->
+          <path d="M10,82 L35,55 L52,64 L75,32 L92,48 L110,36 L130,52 L148,28 L168,50 L185,38 L205,52 L228,22 L252,50 L270,82"
+                fill="none" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- Snow caps -->
+          <path d="M72,36 L75,32 L78,36 L76,35 L74,36 Z" fill="#fff" opacity="0.5"/>
+          <path d="M145,32 L148,28 L151,32 L149,31 L147,32 Z" fill="#fff" opacity="0.5"/>
+          <path d="M225,26 L228,22 L231,26 L229,25 L227,26 Z" fill="#fff" opacity="0.6"/>
+          <!-- Winding road with perspective (thicker near, thinner far) -->
+          <path d="M60,108 C85,96 95,100 115,92 C135,84 142,88 160,80 C178,72 188,76 210,65"
+                fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+          <!-- Dashes on road -->
+          <path d="M70,104 C90,94 100,98 118,90 C136,82 145,86 162,78 C178,70 190,74 208,66"
+                fill="none" stroke="#0a0f1a" stroke-width="1.5" stroke-dasharray="5,8" stroke-linecap="round"/>
+          <!-- Destination pin -->
+          <circle cx="212" cy="63" r="5.5" fill="#ff5252"/>
+          <circle cx="212" cy="63" r="2.5" fill="#fff"/>
           <!-- Text -->
-          <text x="120" y="118" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
+          <text x="140" y="132" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="13" letter-spacing="4">MOTORCAMP</text>
         </svg>
       </div>
-      <h3>The Road Ahead</h3>
-      <p class="desc">Converging road to a distant horizon. Clean, minimal, iconic. Works at any size.</p>
+      <h3>A. Layered Ridgeline</h3>
+      <p class="desc">Three mountain ridges at different depths with snow caps. The winding road has perspective — thicker near, thinner far. Feels like looking at a real mountain range.</p>
       <div class="preview-row">
-        <div class="icon" style="width:64px;height:64px;">
-          <svg viewBox="0 0 100 100" width="64" height="64">
+        <div class="icon" style="width:72px;height:72px;">
+          <svg viewBox="0 0 100 100" width="72" height="72">
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <path d="M30,90 L44,30 L56,30 L70,90 Z" fill="#111827" stroke="#00c853" stroke-width="2.5"/>
-            <line x1="50" y1="85" x2="50" y2="70" stroke="#ffab40" stroke-width="2.5" stroke-dasharray="4,6"/>
-            <line x1="50" y1="60" x2="50" y2="48" stroke="#ffab40" stroke-width="2"/>
-            <circle cx="50" cy="28" r="10" fill="none" stroke="#00c853" stroke-width="2.5"/>
-            <circle cx="50" cy="28" r="4" fill="#00c853"/>
+            <!-- Far ridge -->
+            <path d="M5,62 L25,38 L40,46 L55,30 L70,42 L85,28 L95,62" fill="none" stroke="#00c853" stroke-width="1.5" opacity="0.25"/>
+            <!-- Main ridge -->
+            <path d="M2,62 L18,40 L30,48 L48,22 L62,38 L78,18 L95,42 L98,62" fill="none" stroke="#00c853" stroke-width="3" stroke-linejoin="round"/>
+            <!-- Snow -->
+            <path d="M46,25 L48,22 L50,25" fill="#fff" opacity="0.5"/>
+            <path d="M76,21 L78,18 L80,21" fill="#fff" opacity="0.5"/>
+            <!-- Road -->
+            <path d="M15,85 C30,76 40,80 55,72 C70,64 80,68 88,58" fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round"/>
+            <!-- Pin -->
+            <circle cx="88" cy="56" r="5" fill="#ff5252"/>
+            <circle cx="88" cy="56" r="2" fill="#fff"/>
           </svg>
         </div>
         <div class="icon" style="width:48px;height:48px;">
           <svg viewBox="0 0 100 100" width="48" height="48">
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <path d="M30,90 L44,30 L56,30 L70,90 Z" fill="#111827" stroke="#00c853" stroke-width="3"/>
-            <circle cx="50" cy="28" r="10" fill="none" stroke="#00c853" stroke-width="3"/>
-            <circle cx="50" cy="28" r="4" fill="#00c853"/>
-          </svg>
-        </div>
-      </div>
-      <div class="colors">
-        <div class="swatch" style="background:#0a0f1a"></div>
-        <div class="swatch" style="background:#00c853"></div>
-        <div class="swatch" style="background:#ffab40"></div>
-      </div>
-    </div>
-
-    <!-- Concept 2: Compass + Tent -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <div class="logo-wrap">
-        <svg width="240" height="120" viewBox="0 0 240 120">
-          <!-- Compass circle -->
-          <circle cx="120" cy="52" r="36" fill="none" stroke="#00c853" stroke-width="2"/>
-          <!-- N/S/E/W ticks -->
-          <line x1="120" y1="18" x2="120" y2="24" stroke="#00c853" stroke-width="2"/>
-          <line x1="120" y1="80" x2="120" y2="86" stroke="#78909c" stroke-width="1.5"/>
-          <line x1="86" y1="52" x2="92" y2="52" stroke="#78909c" stroke-width="1.5"/>
-          <line x1="148" y1="52" x2="154" y2="52" stroke="#78909c" stroke-width="1.5"/>
-          <!-- Tent shape as compass needle -->
-          <polygon points="120,22 112,62 120,56 128,62" fill="#00c853" opacity="0.8"/>
-          <polygon points="120,82 112,62 120,56 128,62" fill="#1e88e5" opacity="0.5"/>
-          <!-- Small campfire dot -->
-          <circle cx="120" cy="52" r="3" fill="#ffab40"/>
-          <!-- Text -->
-          <text x="120" y="112" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="600" font-size="11" letter-spacing="2.5">LONG WAY HOME</text>
-        </svg>
-      </div>
-      <h3>Compass Tent</h3>
-      <p class="desc">Compass rose with a tent-shaped north needle. Camping + navigation in one mark.</p>
-      <div class="preview-row">
-        <div class="icon" style="width:64px;height:64px;">
-          <svg viewBox="0 0 100 100" width="64" height="64">
-            <rect width="100" height="100" fill="#0a0f1a"/>
-            <circle cx="50" cy="50" r="34" fill="none" stroke="#00c853" stroke-width="3"/>
-            <polygon points="50,18 40,56 50,48 60,56" fill="#00c853" opacity="0.85"/>
-            <polygon points="50,82 40,56 50,48 60,56" fill="#1e88e5" opacity="0.5"/>
-            <circle cx="50" cy="50" r="3.5" fill="#ffab40"/>
-          </svg>
-        </div>
-        <div class="icon" style="width:48px;height:48px;">
-          <svg viewBox="0 0 100 100" width="48" height="48">
-            <rect width="100" height="100" fill="#0a0f1a"/>
-            <circle cx="50" cy="50" r="34" fill="none" stroke="#00c853" stroke-width="3.5"/>
-            <polygon points="50,18 40,56 50,48 60,56" fill="#00c853"/>
-            <polygon points="50,82 40,56 50,48 60,56" fill="#1e88e5" opacity="0.5"/>
-            <circle cx="50" cy="50" r="4" fill="#ffab40"/>
-          </svg>
-        </div>
-      </div>
-      <div class="colors">
-        <div class="swatch" style="background:#0a0f1a"></div>
-        <div class="swatch" style="background:#00c853"></div>
-        <div class="swatch" style="background:#1e88e5"></div>
-        <div class="swatch" style="background:#ffab40"></div>
-      </div>
-    </div>
-
-    <!-- Concept 3: Mountain Road -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <div class="logo-wrap">
-        <svg width="240" height="120" viewBox="0 0 240 120">
-          <!-- Mountains -->
-          <polygon points="60,75 100,30 140,75" fill="none" stroke="#00c853" stroke-width="2" stroke-linejoin="round"/>
-          <polygon points="110,75 140,42 170,75" fill="none" stroke="#00c853" stroke-width="2" stroke-linejoin="round" opacity="0.5"/>
-          <!-- Winding road -->
-          <path d="M70,95 Q95,78 120,85 Q145,92 165,75" fill="none" stroke="#ffab40" stroke-width="2.5" stroke-linecap="round"/>
-          <!-- Pin at end -->
-          <circle cx="165" cy="73" r="5" fill="#ff5252" stroke="#fff" stroke-width="1.5"/>
-          <!-- Text -->
-          <text x="120" y="115" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
-        </svg>
-      </div>
-      <h3>Mountain Trail</h3>
-      <p class="desc">Mountain silhouette with a winding road and destination pin. Adventure + mapping.</p>
-      <div class="preview-row">
-        <div class="icon" style="width:64px;height:64px;">
-          <svg viewBox="0 0 100 100" width="64" height="64">
-            <rect width="100" height="100" fill="#0a0f1a"/>
-            <polygon points="20,72 50,22 80,72" fill="none" stroke="#00c853" stroke-width="3" stroke-linejoin="round"/>
-            <polygon points="40,72 62,38 84,72" fill="none" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round" opacity="0.4"/>
-            <path d="M20,88 Q40,74 55,82 Q70,90 85,72" fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="85" cy="70" r="5" fill="#ff5252"/>
-          </svg>
-        </div>
-        <div class="icon" style="width:48px;height:48px;">
-          <svg viewBox="0 0 100 100" width="48" height="48">
-            <rect width="100" height="100" fill="#0a0f1a"/>
-            <polygon points="20,72 50,22 80,72" fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
-            <path d="M20,88 Q45,74 55,82 Q70,90 85,72" fill="none" stroke="#ffab40" stroke-width="3.5" stroke-linecap="round"/>
-            <circle cx="85" cy="70" r="6" fill="#ff5252"/>
+            <path d="M5,62 L18,40 L30,48 L48,22 L62,38 L78,18 L95,42 L98,62" fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M15,85 C35,74 50,78 65,68 C80,60 85,62 90,56" fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="90" cy="54" r="6" fill="#ff5252"/>
           </svg>
         </div>
       </div>
@@ -178,40 +105,64 @@
       </div>
     </div>
 
-    <!-- Concept 4: Minimal Pin + Road -->
+    <!-- Variant B: Jagged Peaks with Valley -->
     <div class="card" onclick="this.classList.toggle('selected')">
       <div class="logo-wrap">
-        <svg width="240" height="120" viewBox="0 0 240 120">
-          <!-- Map pin outline with road inside -->
-          <path d="M120,10 C98,10 82,28 82,48 C82,72 120,100 120,100 C120,100 158,72 158,48 C158,28 142,10 120,10 Z"
-                fill="none" stroke="#00c853" stroke-width="2.5"/>
-          <!-- Road inside pin -->
-          <path d="M108,80 L116,44 L124,44 L132,80" fill="#111827" stroke="#78909c" stroke-width="1"/>
-          <line x1="120" y1="76" x2="120" y2="60" stroke="#ffab40" stroke-width="1.5" stroke-dasharray="3,4"/>
-          <!-- Horizon line inside pin -->
-          <line x1="96" y1="48" x2="144" y2="48" stroke="#00c853" stroke-width="1" opacity="0.3"/>
+        <svg width="280" height="150" viewBox="0 0 280 150">
+          <!-- Dramatic jagged peaks -->
+          <path d="M10,85 L30,58 L38,65 L55,35 L62,45 L70,30 L80,42 L95,18 L108,40 L120,32 L135,50 L148,25 L160,42 L175,15 L190,38 L200,28 L215,45 L230,20 L245,48 L255,40 L270,85"
+                fill="none" stroke="#00c853" stroke-width="2" stroke-linejoin="round"/>
+          <!-- Shading on right faces -->
+          <path d="M95,18 L108,40 L95,40 Z" fill="#00c853" opacity="0.08"/>
+          <path d="M148,25 L160,42 L148,42 Z" fill="#00c853" opacity="0.08"/>
+          <path d="M175,15 L190,38 L175,38 Z" fill="#00c853" opacity="0.1"/>
+          <path d="M230,20 L245,48 L230,48 Z" fill="#00c853" opacity="0.08"/>
+          <!-- Snow/ice on tallest peaks -->
+          <path d="M93,22 L95,18 L97,22 L96,21 L94,22 Z" fill="#fff" opacity="0.6"/>
+          <path d="M173,19 L175,15 L177,19 L176,18 L174,19 Z" fill="#fff" opacity="0.7"/>
+          <path d="M228,24 L230,20 L232,24 L231,23 L229,24 Z" fill="#fff" opacity="0.6"/>
+          <!-- Treeline hint at base -->
+          <path d="M10,85 L40,80 L70,82 L100,78 L130,81 L160,77 L190,80 L220,78 L250,81 L270,85"
+                fill="none" stroke="#2e7d32" stroke-width="1.5" opacity="0.3"/>
+          <!-- Winding valley road -->
+          <path d="M45,110 C70,100 80,106 105,95 C125,86 140,92 165,82 C185,74 195,78 220,68"
+                fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round"/>
+          <!-- Road center dashes -->
+          <path d="M55,106 C78,97 88,103 110,93 C130,84 145,90 168,80 C186,73 198,76 218,68"
+                fill="none" stroke="rgba(10,15,26,0.6)" stroke-width="1.5" stroke-dasharray="4,7"/>
+          <!-- Pin -->
+          <path d="M222,60 C222,53 228,48 234,48 C240,48 246,53 246,60 C246,68 234,78 234,78 C234,78 222,68 222,60 Z"
+                fill="#ff5252" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="234" cy="59" r="3" fill="#fff"/>
           <!-- Text -->
-          <text x="120" y="116" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="10.5" letter-spacing="3">LONG WAY HOME</text>
+          <text x="140" y="134" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="13" letter-spacing="4">MOTORCAMP</text>
         </svg>
       </div>
-      <h3>Road Pin</h3>
-      <p class="desc">Map pin with a vanishing-point road inside. Location + journey combined.</p>
+      <h3>B. Jagged Peaks</h3>
+      <p class="desc">Dramatic, sharp mountain range with shaded faces, snow-capped summits, and a treeline hint. A proper pin marker at the destination. More rugged and adventurous.</p>
       <div class="preview-row">
-        <div class="icon" style="width:64px;height:64px;">
-          <svg viewBox="0 0 100 100" width="64" height="64">
+        <div class="icon" style="width:72px;height:72px;">
+          <svg viewBox="0 0 100 100" width="72" height="72">
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <path d="M50,8 C30,8 16,24 16,42 C16,64 50,92 50,92 C50,92 84,64 84,42 C84,24 70,8 50,8 Z"
-                  fill="none" stroke="#00c853" stroke-width="3"/>
-            <path d="M38,72 L46,36 L54,36 L62,72" fill="#111827" stroke="#78909c" stroke-width="1.5"/>
-            <line x1="50" y1="68" x2="50" y2="50" stroke="#ffab40" stroke-width="2" stroke-dasharray="3,4"/>
+            <path d="M5,60 L15,42 L22,48 L35,22 L45,35 L55,12 L65,30 L75,18 L88,38 L95,32 L98,60"
+                  fill="none" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M35,22 L45,35 L35,35 Z" fill="#00c853" opacity="0.1"/>
+            <path d="M55,12 L65,30 L55,30 Z" fill="#00c853" opacity="0.12"/>
+            <path d="M75,18 L88,38 L75,38 Z" fill="#00c853" opacity="0.1"/>
+            <path d="M53,15 L55,12 L57,15" fill="#fff" opacity="0.6"/>
+            <path d="M73,21 L75,18 L77,21" fill="#fff" opacity="0.6"/>
+            <path d="M12,82 C28,74 38,78 52,70 C66,62 76,66 90,56" fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round"/>
+            <path d="M88,48 C88,43 92,40 96,40 C100,40 100,46 96,50 C94,52 92,50 90,48 Z" fill="#ff5252"/>
           </svg>
         </div>
         <div class="icon" style="width:48px;height:48px;">
           <svg viewBox="0 0 100 100" width="48" height="48">
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <path d="M50,8 C30,8 16,24 16,42 C16,64 50,92 50,92 C50,92 84,64 84,42 C84,24 70,8 50,8 Z"
-                  fill="none" stroke="#00c853" stroke-width="4"/>
-            <line x1="50" y1="68" x2="50" y2="44" stroke="#ffab40" stroke-width="3" stroke-dasharray="4,5"/>
+            <path d="M5,60 L20,40 L35,22 L48,36 L55,12 L68,32 L78,18 L95,40 L98,60"
+                  fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M55,12 L68,32 L55,32 Z" fill="#00c853" opacity="0.12"/>
+            <path d="M12,82 C35,72 50,76 68,66 C82,58 88,60 92,54" fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="92" cy="52" r="6" fill="#ff5252"/>
           </svg>
         </div>
       </div>
@@ -219,49 +170,86 @@
         <div class="swatch" style="background:#0a0f1a"></div>
         <div class="swatch" style="background:#00c853"></div>
         <div class="swatch" style="background:#ffab40"></div>
+        <div class="swatch" style="background:#ff5252"></div>
       </div>
     </div>
 
-    <!-- Concept 5: Campfire Waypoint -->
+    <!-- Variant C: Filled Gradient Mountains -->
     <div class="card" onclick="this.classList.toggle('selected')">
       <div class="logo-wrap">
-        <svg width="240" height="120" viewBox="0 0 240 120">
-          <!-- Campfire -->
-          <path d="M120,28 C114,42 108,50 112,60 C114,64 118,66 120,60 C122,66 126,64 128,60 C132,50 126,42 120,28 Z"
-                fill="#ffab40" opacity="0.9"/>
-          <path d="M120,38 C117,46 115,52 118,56 C119,58 121,58 122,56 C125,52 123,46 120,38 Z"
+        <svg width="280" height="150" viewBox="0 0 280 150">
+          <defs>
+            <linearGradient id="mtnFar" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#00c853" stop-opacity="0.08"/>
+              <stop offset="100%" stop-color="#00c853" stop-opacity="0.02"/>
+            </linearGradient>
+            <linearGradient id="mtnMid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#00c853" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#00c853" stop-opacity="0.04"/>
+            </linearGradient>
+            <linearGradient id="mtnNear" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#00c853" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#00c853" stop-opacity="0.06"/>
+            </linearGradient>
+          </defs>
+          <!-- Far mountains (filled, faint) -->
+          <path d="M0,85 L40,55 L65,65 L100,42 L140,60 L175,38 L210,58 L245,45 L280,85 Z"
+                fill="url(#mtnFar)" stroke="#00c853" stroke-width="1" opacity="0.5"/>
+          <!-- Mid mountains -->
+          <path d="M0,85 L30,50 L55,60 L85,30 L110,50 L140,35 L170,52 L200,25 L235,50 L260,40 L280,85 Z"
+                fill="url(#mtnMid)" stroke="#00c853" stroke-width="1.5" opacity="0.7"/>
+          <!-- Near mountains (most prominent) -->
+          <path d="M0,85 L25,55 L45,62 L70,28 L95,50 L115,35 L140,55 L160,22 L182,48 L205,30 L230,50 L255,18 L280,52 L280,85 Z"
+                fill="url(#mtnNear)" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- Snow on peaks -->
+          <path d="M68,31 L70,28 L72,31 L71,30 L69,31 Z" fill="#fff" opacity="0.5"/>
+          <path d="M158,25 L160,22 L162,25 L161,24 L159,25 Z" fill="#fff" opacity="0.55"/>
+          <path d="M253,21 L255,18 L257,21 L256,20 L254,21 Z" fill="#fff" opacity="0.6"/>
+          <!-- Road with glow -->
+          <path d="M50,108 C80,98 95,104 120,92 C145,82 155,86 180,76 C200,68 210,72 235,62"
+                fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+          <path d="M50,108 C80,98 95,104 120,92 C145,82 155,86 180,76 C200,68 210,72 235,62"
+                fill="none" stroke="#ffab40" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Pin with drop shadow -->
+          <ellipse cx="237" cy="68" rx="6" ry="2" fill="rgba(0,0,0,0.3)"/>
+          <path d="M229,54 C229,47 233,42 237,42 C241,42 245,47 245,54 C245,62 237,70 237,70 C237,70 229,62 229,54 Z"
                 fill="#ff5252"/>
-          <!-- Logs -->
-          <line x1="106" y1="68" x2="134" y2="62" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
-          <line x1="106" y1="62" x2="134" y2="68" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
-          <!-- Signal rings (like a waypoint beacon) -->
-          <circle cx="120" cy="50" r="24" fill="none" stroke="#00c853" stroke-width="1" opacity="0.3"/>
-          <circle cx="120" cy="50" r="34" fill="none" stroke="#00c853" stroke-width="0.8" opacity="0.15"/>
+          <circle cx="237" cy="53" r="3" fill="#fff" opacity="0.9"/>
           <!-- Text -->
-          <text x="120" y="100" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
-          <text x="120" y="113" text-anchor="middle" fill="#78909c" font-family="Inter, sans-serif" font-weight="400" font-size="7" letter-spacing="4">FIND CAMP. GO OFF-GRID.</text>
+          <text x="140" y="132" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="13" letter-spacing="4">MOTORCAMP</text>
         </svg>
       </div>
-      <h3>Campfire Beacon</h3>
-      <p class="desc">Campfire with signal rings — a waypoint calling you home. Warm, inviting, unique.</p>
+      <h3>C. Gradient Layers</h3>
+      <p class="desc">Three mountain layers with gradient fills creating atmospheric depth — like looking through haze at a distant range. Glowing road, proper drop-shadow pin. Most premium feel.</p>
       <div class="preview-row">
-        <div class="icon" style="width:64px;height:64px;">
-          <svg viewBox="0 0 100 100" width="64" height="64">
+        <div class="icon" style="width:72px;height:72px;">
+          <svg viewBox="0 0 100 100" width="72" height="72">
+            <defs>
+              <linearGradient id="gFar2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00c853" stop-opacity="0.1"/><stop offset="100%" stop-color="#00c853" stop-opacity="0.02"/></linearGradient>
+              <linearGradient id="gMid2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00c853" stop-opacity="0.2"/><stop offset="100%" stop-color="#00c853" stop-opacity="0.04"/></linearGradient>
+              <linearGradient id="gNear2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00c853" stop-opacity="0.3"/><stop offset="100%" stop-color="#00c853" stop-opacity="0.06"/></linearGradient>
+            </defs>
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <path d="M50,18 C42,36 34,48 40,60 C43,66 47,68 50,60 C53,68 57,66 60,60 C66,48 58,36 50,18 Z" fill="#ffab40"/>
-            <path d="M50,30 C46,40 43,48 47,54 C48,56 52,56 53,54 C57,48 54,40 50,30 Z" fill="#ff5252"/>
-            <line x1="34" y1="70" x2="66" y2="62" stroke="#795548" stroke-width="4" stroke-linecap="round"/>
-            <line x1="34" y1="62" x2="66" y2="70" stroke="#795548" stroke-width="4" stroke-linecap="round"/>
-            <circle cx="50" cy="46" r="26" fill="none" stroke="#00c853" stroke-width="2" opacity="0.3"/>
+            <path d="M0,62 L20,42 L38,50 L55,32 L72,44 L90,35 L100,62 Z" fill="url(#gFar2)" stroke="#00c853" stroke-width="1" opacity="0.5"/>
+            <path d="M0,62 L15,38 L32,48 L50,20 L68,40 L82,28 L100,48 L100,62 Z" fill="url(#gMid2)" stroke="#00c853" stroke-width="1.5" opacity="0.7"/>
+            <path d="M0,62 L12,42 L28,50 L45,18 L60,38 L75,14 L92,38 L100,62 Z" fill="url(#gNear2)" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M43,21 L45,18 L47,21" fill="#fff" opacity="0.5"/>
+            <path d="M73,17 L75,14 L77,17" fill="#fff" opacity="0.5"/>
+            <path d="M12,84 C30,76 42,80 58,70 C72,62 80,66 92,56" fill="none" stroke="#ffab40" stroke-width="3.5" stroke-linecap="round" opacity="0.4"/>
+            <path d="M12,84 C30,76 42,80 58,70 C72,62 80,66 92,56" fill="none" stroke="#ffab40" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="92" cy="54" r="5" fill="#ff5252"/>
+            <circle cx="92" cy="54" r="2" fill="#fff"/>
           </svg>
         </div>
         <div class="icon" style="width:48px;height:48px;">
           <svg viewBox="0 0 100 100" width="48" height="48">
+            <defs>
+              <linearGradient id="gN3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00c853" stop-opacity="0.3"/><stop offset="100%" stop-color="#00c853" stop-opacity="0.06"/></linearGradient>
+            </defs>
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <path d="M50,18 C42,36 34,48 40,60 C43,66 47,68 50,60 C53,68 57,66 60,60 C66,48 58,36 50,18 Z" fill="#ffab40"/>
-            <path d="M50,30 C46,40 43,48 47,54 C48,56 52,56 53,54 C57,48 54,40 50,30 Z" fill="#ff5252"/>
-            <line x1="34" y1="70" x2="66" y2="62" stroke="#795548" stroke-width="5" stroke-linecap="round"/>
-            <line x1="34" y1="62" x2="66" y2="70" stroke="#795548" stroke-width="5" stroke-linecap="round"/>
+            <path d="M0,62 L15,38 L35,48 L50,18 L68,38 L80,14 L95,40 L100,62 Z" fill="url(#gN3)" stroke="#00c853" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M12,84 C35,74 50,78 68,66 C82,58 88,62 94,54" fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="94" cy="52" r="6" fill="#ff5252"/>
           </svg>
         </div>
       </div>
@@ -269,47 +257,63 @@
         <div class="swatch" style="background:#0a0f1a"></div>
         <div class="swatch" style="background:#00c853"></div>
         <div class="swatch" style="background:#ffab40"></div>
-        <div class="swatch" style="background:#795548"></div>
+        <div class="swatch" style="background:#ff5252"></div>
       </div>
     </div>
 
-    <!-- Concept 6: Tyre Track Circle -->
+    <!-- Variant D: Single Dramatic Peak -->
     <div class="card" onclick="this.classList.toggle('selected')">
       <div class="logo-wrap">
-        <svg width="240" height="120" viewBox="0 0 240 120">
-          <!-- Tyre track forming a broken circle -->
-          <circle cx="120" cy="50" r="32" fill="none" stroke="#00c853" stroke-width="3"
-                  stroke-dasharray="6,4" stroke-linecap="round"/>
-          <!-- Gap at bottom with road going out -->
-          <rect x="115" y="76" width="10" height="12" fill="#0a0f1a"/>
-          <line x1="120" y1="82" x2="120" y2="98" stroke="#ffab40" stroke-width="2" stroke-dasharray="3,4"/>
-          <!-- Arrow/direction indicator inside -->
-          <polygon points="120,30 112,52 120,46 128,52" fill="#00c853" opacity="0.7"/>
+        <svg width="280" height="150" viewBox="0 0 280 150">
+          <!-- Single dramatic peak with realistic profile -->
+          <path d="M10,85 L35,72 L55,60 L75,50 L90,42 L105,48 L115,38 L128,42 L140,15 L152,42 L162,38 L175,48 L190,42 L205,50 L225,60 L245,72 L270,85"
+                fill="none" stroke="#00c853" stroke-width="2" stroke-linejoin="round"/>
+          <!-- Ridge shadow (right side darker) -->
+          <path d="M140,15 L152,42 L162,38 L175,48 L190,42 L205,50 L225,60 L245,72 L270,85 L270,85 L140,85 Z"
+                fill="#00c853" opacity="0.06"/>
+          <!-- Shoulder ridges -->
+          <path d="M20,85 L45,68 L65,72 L80,62 L100,85" fill="none" stroke="#00c853" stroke-width="1.2" opacity="0.3"/>
+          <path d="M180,85 L200,68 L220,72 L240,62 L270,85" fill="none" stroke="#00c853" stroke-width="1.2" opacity="0.3"/>
+          <!-- Snow cap -->
+          <path d="M132,24 L140,15 L148,24 L144,20 L140,22 L136,20 Z" fill="#fff" opacity="0.6"/>
+          <!-- Glacial lines -->
+          <path d="M138,20 L135,35" stroke="#fff" stroke-width="0.5" opacity="0.25"/>
+          <path d="M142,20 L146,35" stroke="#fff" stroke-width="0.5" opacity="0.25"/>
+          <!-- Switchback road climbing the mountain -->
+          <path d="M40,108 C60,102 70,98 85,95 C100,92 105,96 115,92 C125,88 130,84 145,82 C160,80 170,84 185,78 C200,72 208,68 225,64"
+                fill="none" stroke="#ffab40" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Pin at summit approach -->
+          <circle cx="227" cy="62" r="5" fill="#ff5252"/>
+          <circle cx="227" cy="62" r="2.2" fill="#fff"/>
           <!-- Text -->
-          <text x="120" y="114" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3">LONG WAY HOME</text>
+          <text x="140" y="132" text-anchor="middle" fill="#e0e0e0" font-family="Inter, sans-serif" font-weight="700" font-size="13" letter-spacing="4">MOTORCAMP</text>
         </svg>
       </div>
-      <h3>Tyre Track Compass</h3>
-      <p class="desc">Broken tyre-track circle with a road trailing off. Journey that loops back home.</p>
+      <h3>D. The Summit</h3>
+      <p class="desc">One dominant peak with a realistic profile — shoulder ridges, shadow face, snow cap with glacial lines. The road switchbacks up toward it. Heroic, focused, iconic.</p>
       <div class="preview-row">
-        <div class="icon" style="width:64px;height:64px;">
-          <svg viewBox="0 0 100 100" width="64" height="64">
+        <div class="icon" style="width:72px;height:72px;">
+          <svg viewBox="0 0 100 100" width="72" height="72">
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <circle cx="50" cy="44" r="30" fill="none" stroke="#00c853" stroke-width="4"
-                    stroke-dasharray="6,4" stroke-linecap="round"/>
-            <rect x="46" y="70" width="8" height="10" fill="#0a0f1a"/>
-            <line x1="50" y1="76" x2="50" y2="94" stroke="#ffab40" stroke-width="3" stroke-dasharray="4,5"/>
-            <polygon points="50,22 42,48 50,40 58,48" fill="#00c853" opacity="0.8"/>
+            <path d="M5,65 L18,55 L30,48 L42,42 L50,12 L58,42 L70,48 L82,55 L95,65"
+                  fill="none" stroke="#00c853" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M50,12 L58,42 L70,48 L82,55 L95,65 L95,65 L50,65 Z" fill="#00c853" opacity="0.07"/>
+            <path d="M46,20 L50,12 L54,20 L52,17 L50,18 L48,17 Z" fill="#fff" opacity="0.6"/>
+            <path d="M10,85 C25,80 35,78 48,74 C60,70 68,74 80,68 C88,64 92,62 96,58"
+                  fill="none" stroke="#ffab40" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="96" cy="56" r="5" fill="#ff5252"/>
+            <circle cx="96" cy="56" r="2" fill="#fff"/>
           </svg>
         </div>
         <div class="icon" style="width:48px;height:48px;">
           <svg viewBox="0 0 100 100" width="48" height="48">
             <rect width="100" height="100" fill="#0a0f1a"/>
-            <circle cx="50" cy="44" r="30" fill="none" stroke="#00c853" stroke-width="5"
-                    stroke-dasharray="6,4" stroke-linecap="round"/>
-            <rect x="45" y="70" width="10" height="10" fill="#0a0f1a"/>
-            <line x1="50" y1="76" x2="50" y2="94" stroke="#ffab40" stroke-width="4"/>
-            <polygon points="50,22 42,48 50,40 58,48" fill="#00c853"/>
+            <path d="M5,65 L22,50 L38,42 L50,12 L62,42 L78,50 L95,65"
+                  fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M50,12 L62,42 L78,50 L95,65 L50,65 Z" fill="#00c853" opacity="0.08"/>
+            <path d="M46,20 L50,12 L54,20" fill="#fff" opacity="0.6"/>
+            <path d="M10,85 C30,78 48,74 62,68 C78,60 88,62 96,56" fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="96" cy="54" r="6" fill="#ff5252"/>
           </svg>
         </div>
       </div>
@@ -317,11 +321,12 @@
         <div class="swatch" style="background:#0a0f1a"></div>
         <div class="swatch" style="background:#00c853"></div>
         <div class="swatch" style="background:#ffab40"></div>
+        <div class="swatch" style="background:#ff5252"></div>
       </div>
     </div>
 
   </div>
 
-  <p style="margin-top:32px;color:#546e7a;font-size:0.8rem;text-align:center">Click cards to select. All concepts use the existing app color palette (#00c853 green, #ffab40 amber, dark #0a0f1a).</p>
+  <p style="margin-top:32px;color:#546e7a;font-size:0.8rem;text-align:center">All variants use the MotorCamp palette. Tagline: "Love is a long road." Each shows full logo + app icon at 72px and 48px.</p>
 </body>
 </html>

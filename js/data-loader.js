@@ -1,7 +1,7 @@
 /* ===== Data Loader — Static GeoJSON with Cache API ===== */
 const DataLoader = {
   cache: {},
-  CACHE_NAME: 'lwh-data-v1',
+  CACHE_NAME: 'motorcamp-data-v1',
   CACHE_TTL: 24 * 60 * 60 * 1000, // 24 hours
 
   async loadJSON(url) {
