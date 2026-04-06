@@ -625,6 +625,8 @@
   const LEAN_EMA_ALPHA = 0.18; // smoothing — higher = more responsive, lower = smoother
   let leanCalibSamples = [];
   const LEAN_CALIB_COUNT = 30; // auto-calibrate from first N samples (~0.5s at 60Hz)
+  const LEAN_CALIB_MIN_SPEED = 15; // km/h — only calibrate when riding (bike is upright)
+  const LEAN_RECALIB_RATE = 0.002; // how fast continuous recalibration nudges the offset
 
   function onDeviceMotion(event) {
     const accel = event.accelerationIncludingGravity;
@@ -647,19 +649,29 @@
     const other = (orient === 90 || orient === -90 || orient === 270) ? accel.x : accel.y;
     const rawLean = Math.atan2(lateral, Math.sqrt(other * other + accel.z * accel.z)) * (180 / Math.PI);
 
-    // Auto-calibration: sample first N readings to establish the "upright" offset.
-    // This handles mounts with a slight permanent roll angle.
+    // Auto-calibration: collect samples only while riding above min speed,
+    // so the bike is upright and we capture the true mount offset — not a
+    // kickstand angle or a hand-held tilt from before the ride started.
     if (leanCalibSamples.length < LEAN_CALIB_COUNT) {
-      leanCalibSamples.push(rawLean);
-      if (leanCalibSamples.length === LEAN_CALIB_COUNT) {
-        leanCalibration = leanCalibSamples.reduce((a, b) => a + b, 0) / LEAN_CALIB_COUNT;
-        // Snap the EMA to zero so it doesn't drift in from a stale value
-        currentLean = 0;
+      if (lastGpsSpeed >= LEAN_CALIB_MIN_SPEED) {
+        leanCalibSamples.push(rawLean);
+        if (leanCalibSamples.length === LEAN_CALIB_COUNT) {
+          leanCalibration = leanCalibSamples.reduce((a, b) => a + b, 0) / LEAN_CALIB_COUNT;
+          currentLean = 0;
+        }
       }
-      return; // don't display during calibration
+      return; // don't display until calibrated
     }
 
+    // Continuous recalibration: when cruising straight at speed, slowly nudge
+    // the calibration offset toward the current reading. This corrects for the
+    // phone shifting in the mount mid-ride. Only applies when the calibrated
+    // value is small (< 5°, i.e. roughly upright) and speed is high enough
+    // that the bike genuinely is upright — not mid-corner.
     const calibrated = rawLean - leanCalibration;
+    if (lastGpsSpeed >= LEAN_CALIB_MIN_SPEED && Math.abs(calibrated) < 5) {
+      leanCalibration += calibrated * LEAN_RECALIB_RATE;
+    }
 
     // Double EMA smoothing (two passes for less jitter, slightly more lag)
     currentLean = currentLean + LEAN_EMA_ALPHA * (calibrated - currentLean);
