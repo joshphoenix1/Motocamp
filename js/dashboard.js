@@ -148,6 +148,8 @@
         currentLean = 0;
         peakLeanLeft = 0;
         peakLeanRight = 0;
+        leanCalibSamples = [];
+        leanCalibration = 0;
         lastElevUpdateDist = 0;
         updateDisplay(0, null, null);
       }
@@ -572,33 +574,54 @@
     }
   }
 
-  const LEAN_EMA_ALPHA = 0.15; // smoothing factor — lower = smoother, more latency
+  const LEAN_EMA_ALPHA = 0.07; // smoothing — lower = smoother (less jitter, more lag)
+  let leanCalibSamples = [];
+  const LEAN_CALIB_COUNT = 30; // auto-calibrate from first N samples (~0.5s at 60Hz)
 
   function onDeviceMotion(event) {
     const accel = event.accelerationIncludingGravity;
-    if (!accel || accel.x === null || accel.z === null) return;
+    if (!accel || accel.x === null || accel.y === null || accel.z === null) return;
 
-    // Raw lean = phone roll angle
-    // atan2(lateral, vertical) gives tilt from upright
-    let rawLean = Math.atan2(accel.x, Math.abs(accel.z)) * (180 / Math.PI);
-
-    // Adjust for screen orientation (landscape left vs right)
+    // Determine which physical axis is "lateral" (left-right tilt) based on
+    // screen orientation. The accelerometer always reports in device-physical
+    // coordinates, so we must pick the right axis for each rotation.
     const orient = (screen.orientation || {}).angle || window.orientation || 0;
-    if (orient === 90) rawLean = -rawLean;
-    // orient === -90 or 270: lean is already correct sign
-    // orient === 0 (portrait): lean works as-is for most mounts
+    let lateral;
+    switch (orient) {
+      case 90:   lateral = -accel.y; break;  // landscape left (home button right)
+      case -90:
+      case 270:  lateral =  accel.y; break;  // landscape right (home button left)
+      default:   lateral =  accel.x; break;  // portrait
+    }
 
-    // Apply calibration offset
-    rawLean -= leanCalibration;
+    // True roll angle independent of pitch (forward-leaning mount safe).
+    // atan2(lateral, sqrt(other² + z²)) gives roll regardless of pitch angle.
+    const other = (orient === 90 || orient === -90 || orient === 270) ? accel.x : accel.y;
+    const rawLean = Math.atan2(lateral, Math.sqrt(other * other + accel.z * accel.z)) * (180 / Math.PI);
 
-    // EMA smoothing
-    currentLean = currentLean + LEAN_EMA_ALPHA * (rawLean - currentLean);
+    // Auto-calibration: sample first N readings to establish the "upright" offset.
+    // This handles mounts with a slight permanent roll angle.
+    if (leanCalibSamples.length < LEAN_CALIB_COUNT) {
+      leanCalibSamples.push(rawLean);
+      if (leanCalibSamples.length === LEAN_CALIB_COUNT) {
+        leanCalibration = leanCalibSamples.reduce((a, b) => a + b, 0) / LEAN_CALIB_COUNT;
+      }
+      return; // don't display during calibration
+    }
 
-    // Track peaks
+    const calibrated = rawLean - leanCalibration;
+
+    // Double EMA smoothing (two passes for less jitter, slightly more lag)
+    currentLean = currentLean + LEAN_EMA_ALPHA * (calibrated - currentLean);
+
+    // Deadband: suppress display jitter below 2°
+    const displayLean = Math.abs(currentLean) < 2 ? 0 : currentLean;
+
+    // Track peaks (use raw smoothed, not deadbanded)
     if (currentLean < -1 && Math.abs(currentLean) > peakLeanLeft) peakLeanLeft = Math.abs(currentLean);
     if (currentLean > 1 && currentLean > peakLeanRight) peakLeanRight = currentLean;
 
-    updateLeanDisplay();
+    updateLeanDisplay(displayLean);
   }
 
   function initLeanArcs() {
@@ -623,10 +646,11 @@
     if (rightArc) rightArc.setAttribute('d', '');
   }
 
-  function updateLeanDisplay() {
+  function updateLeanDisplay(lean) {
+    if (lean === undefined) lean = currentLean;
     const MAX_ANGLE = 45;
-    const absLean = Math.min(Math.abs(currentLean), MAX_ANGLE);
-    const leanDir = currentLean < 0 ? 'L' : 'R';
+    const absLean = Math.min(Math.abs(lean), MAX_ANGLE);
+    const leanDir = lean < 0 ? 'L' : 'R';
     const cx = 100, cy = 100, r = 92;
 
     // Update readout text
@@ -646,11 +670,11 @@
     // Color based on lean angle
     const color = absLean > 35 ? '#ff5252' : absLean > 20 ? '#ffab40' : '#00c853';
 
-    if (currentLean < -1 && leftArc) {
+    if (lean < -1 && leftArc) {
       leftArc.setAttribute('d', describeArc(cx, cy, r, 270 - absLean, 270));
       leftArc.setAttribute('stroke', color);
       if (rightArc) rightArc.setAttribute('d', '');
-    } else if (currentLean > 1 && rightArc) {
+    } else if (lean > 1 && rightArc) {
       rightArc.setAttribute('d', describeArc(cx, cy, r, 270, 270 + absLean));
       rightArc.setAttribute('stroke', color);
       if (leftArc) leftArc.setAttribute('d', '');
@@ -704,6 +728,15 @@
       .catch(() => {});
   }
 
+  // Convert lat/lng to pixel position within the global tile grid
+  function lngToTilePixel(lng, zoom) {
+    return ((lng + 180) / 360) * Math.pow(2, zoom) * 256;
+  }
+  function latToTilePixel(lat, zoom) {
+    const latRad = lat * Math.PI / 180;
+    return ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * Math.pow(2, zoom) * 256;
+  }
+
   function updateRadar() {
     if (!radarTimestamps || !currentLat || !currentLng) return;
 
@@ -724,7 +757,6 @@
 
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, size, size);
 
     const cx = size / 2, cy = size / 2;
     const radius = size / 2;
@@ -736,102 +768,131 @@
     ctx.clip();
 
     // Dark background
-    ctx.fillStyle = 'rgba(15,22,30,0.8)';
+    ctx.fillStyle = '#0f161e';
     ctx.fillRect(0, 0, size, size);
 
-    // Draw range ring
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
+    // Crosshair lines (subtle grid to show it's "alive")
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.7, 0, Math.PI * 2);
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, size);
+    ctx.moveTo(0, cy); ctx.lineTo(size, cy);
     ctx.stroke();
+
+    // Range rings
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
     // Get latest radar timestamp
     const latest = radarTimestamps[radarTimestamps.length - 1];
-    if (!latest) { ctx.restore(); drawRadarOverlay(ctx, cx, cy, radius, size); return; }
-
-    // Calculate tile coordinates for the rider's position at zoom level 7
-    // This gives a ~150km view which we'll crop to ~20km
-    const zoom = 9; // Higher zoom for better detail at 20km radius
-    const tileX = Math.floor((currentLng + 180) / 360 * Math.pow(2, zoom));
-    const latRad = currentLat * Math.PI / 180;
-    const tileY = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, zoom));
-
-    const tileKey = `${latest.path}/${zoom}/${tileX}/${tileY}`;
-
-    if (radarTileCache[tileKey]) {
-      drawRadarTile(ctx, radarTileCache[tileKey], cx, cy, radius, size, zoom, tileX, tileY);
-    } else {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        radarTileCache[tileKey] = img;
-        // Evict old cache entries
-        const keys = Object.keys(radarTileCache);
-        if (keys.length > 20) delete radarTileCache[keys[0]];
-        updateRadar(); // redraw
-      };
-      img.onerror = () => {};
-      img.src = `https://tilecache.rainviewer.com${latest.path}/256/${zoom}/${tileX}/${tileY}/4/1_1.png`;
+    if (latest) {
+      drawRadarTiles(ctx, latest, cx, cy, radius, size);
     }
 
     ctx.restore();
     drawRadarOverlay(ctx, cx, cy, radius, size);
   }
 
-  function drawRadarTile(ctx, img, cx, cy, radius, size, zoom, tileX, tileY) {
-    // Calculate where the rider's position falls within the tile (0-1)
+  function drawRadarTiles(ctx, latest, cx, cy, radius, size) {
+    const zoom = 7; // Each tile ~160km at NZ latitudes — one tile covers our 40km view
     const n = Math.pow(2, zoom);
-    const tileLeftLng = tileX / n * 360 - 180;
-    const tileRightLng = (tileX + 1) / n * 360 - 180;
-    const tileTopLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * tileY / n)));
-    const tileBotLatRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY + 1) / n)));
-    const tileTopLat = tileTopLatRad * 180 / Math.PI;
-    const tileBotLat = tileBotLatRad * 180 / Math.PI;
 
-    // Rider position as fraction within tile
-    const rx = (currentLng - tileLeftLng) / (tileRightLng - tileLeftLng);
-    const ry = (currentLat - tileTopLat) / (tileBotLat - tileTopLat);
+    // Rider's pixel position in the global tile grid
+    const riderPx = lngToTilePixel(currentLng, zoom);
+    const riderPy = latToTilePixel(currentLat, zoom);
 
-    // We want the tile centered on the rider, scaled so 20km ≈ radius
-    // At this latitude, 1 degree ≈ 111km. Tile width in km:
-    const tileWidthKm = (tileRightLng - tileLeftLng) * 111 * Math.cos(currentLat * Math.PI / 180);
+    // Determine which tile the rider is on
+    const centerTileX = Math.floor(riderPx / 256);
+    const centerTileY = Math.floor(riderPy / 256);
+
+    // How many pixels per km at this zoom & latitude
+    const metersPerPixel = (156543.03 * Math.cos(currentLat * Math.PI / 180)) / Math.pow(2, zoom);
+    const pxPerKm = 1000 / metersPerPixel;
     const rangeKm = 20;
-    const scale = (size / (rangeKm * 2)) * tileWidthKm / 256;
+    const canvasScale = radius / (rangeKm * pxPerKm); // canvas pixels per tile pixel
 
-    // Rotate for heading-up
+    // Rotation for heading-up
     const headingRad = currentHeading ? -currentHeading * Math.PI / 180 : 0;
 
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(headingRad);
-    ctx.translate(-rx * 256 * scale, -ry * 256 * scale);
-    ctx.drawImage(img, 0, 0, 256 * scale, 256 * scale);
-    ctx.restore();
+    // Load & draw a 3x3 grid of tiles around the rider
+    let allLoaded = true;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const tx = centerTileX + dx;
+        const ty = centerTileY + dy;
+        const tileKey = `${latest.path}/${zoom}/${tx}/${ty}`;
+
+        if (radarTileCache[tileKey]) {
+          // Tile's top-left corner in global pixel space, relative to rider
+          const offsetPx = (tx * 256 - riderPx) * canvasScale;
+          const offsetPy = (ty * 256 - riderPy) * canvasScale;
+          const tileSize = 256 * canvasScale;
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(headingRad);
+          ctx.drawImage(radarTileCache[tileKey], offsetPx, offsetPy, tileSize, tileSize);
+          ctx.restore();
+        } else {
+          allLoaded = false;
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          const key = tileKey;
+          img.onload = () => {
+            radarTileCache[key] = img;
+            // Evict old entries (keep last 30)
+            const keys = Object.keys(radarTileCache);
+            if (keys.length > 30) {
+              for (let i = 0; i < keys.length - 30; i++) delete radarTileCache[keys[i]];
+            }
+            updateRadar(); // redraw when tile arrives
+          };
+          img.onerror = () => {
+            // Cache a 1x1 transparent pixel so we don't retry endlessly
+            const c = document.createElement('canvas');
+            c.width = 1; c.height = 1;
+            radarTileCache[key] = c;
+          };
+          img.src = `https://tilecache.rainviewer.com${latest.path}/256/${zoom}/${tx}/${ty}/4/1_1.png`;
+        }
+      }
+    }
   }
 
   function drawRadarOverlay(ctx, cx, cy, radius, size) {
     // Rider dot at center
     ctx.fillStyle = '#00c853';
+    ctx.shadowColor = 'rgba(0,200,83,0.6)';
+    ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
 
     // Heading indicator (small line pointing up from center)
-    ctx.strokeStyle = 'rgba(0,200,83,0.6)';
+    ctx.strokeStyle = 'rgba(0,200,83,0.5)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - 4);
-    ctx.lineTo(cx, cy - radius * 0.3);
+    ctx.moveTo(cx, cy - 5);
+    ctx.lineTo(cx, cy - radius * 0.35);
     ctx.stroke();
 
-    // North indicator
+    // North indicator (rotated to correct position in heading-up mode)
     if (currentHeading !== null) {
-      const northRad = -currentHeading * Math.PI / 180;
-      const nx = cx + (radius - 8) * Math.sin(northRad);
-      const ny = cy - (radius - 8) * Math.cos(northRad);
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '8px Inter, sans-serif';
+      const northRad = (-currentHeading) * Math.PI / 180;
+      const nr = radius - 7;
+      const nx = cx + nr * Math.sin(northRad);
+      const ny = cy - nr * Math.cos(northRad);
+      ctx.fillStyle = 'rgba(255,80,80,0.7)';
+      ctx.font = 'bold 7px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('N', nx, ny);
