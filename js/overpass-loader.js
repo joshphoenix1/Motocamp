@@ -87,6 +87,54 @@ const OverpassLoader = {
       icon: 'bed',
       markerType: 'accommodation',
     },
+    hospitals: {
+      label: 'Hospitals & Clinics',
+      query: '(node["amenity"="hospital"]({{bbox}});way["amenity"="hospital"]({{bbox}});node["amenity"="clinic"]({{bbox}});way["amenity"="clinic"]({{bbox}}););out center body;',
+      icon: 'hospital',
+      markerType: 'hospital',
+    },
+    atms: {
+      label: 'ATMs & Banks',
+      query: '(node["amenity"="atm"]({{bbox}});node["amenity"="bank"]({{bbox}});way["amenity"="bank"]({{bbox}}););out center body;',
+      icon: 'money-bill-wave',
+      markerType: 'atm',
+    },
+    borderCrossings: {
+      label: 'Border Crossings',
+      query: '(node["barrier"="border_control"]({{bbox}});way["barrier"="border_control"]({{bbox}}););out center body;',
+      icon: 'passport',
+      markerType: 'border',
+    },
+    restAreas: {
+      label: 'Rest Areas',
+      query: '(node["highway"="rest_area"]({{bbox}});way["highway"="rest_area"]({{bbox}});node["highway"="services"]({{bbox}});way["highway"="services"]({{bbox}}););out center body;',
+      icon: 'square-parking',
+      markerType: 'restarea',
+    },
+    fords: {
+      label: 'Fords & River Crossings',
+      query: '(node["ford"="yes"]({{bbox}});way["ford"="yes"]({{bbox}}););out center body;',
+      icon: 'water',
+      markerType: 'ford',
+    },
+    ferries: {
+      label: 'Ferry Terminals',
+      query: '(node["amenity"="ferry_terminal"]({{bbox}});way["amenity"="ferry_terminal"]({{bbox}}););out center body;',
+      icon: 'ship',
+      markerType: 'ferry',
+    },
+    waterSources: {
+      label: 'Springs & Wells',
+      query: '(node["natural"="spring"]({{bbox}});node["man_made"="water_well"]({{bbox}}););out center body;',
+      icon: 'faucet-drip',
+      markerType: 'spring',
+    },
+    embassies: {
+      label: 'Embassies & Consulates',
+      query: '(node["office"="diplomatic"]({{bbox}});way["office"="diplomatic"]({{bbox}}););out center body;',
+      icon: 'building-flag',
+      markerType: 'embassy',
+    },
   },
 
   // ===== IndexedDB =====

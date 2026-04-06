@@ -661,6 +661,14 @@ body {
 .marker-viewpoint { background: #7e57c2; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-pass { background: #5d4037; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-accommodation { background: #1e88e5; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-hospital { background: #d32f2f; color: #fff; width: 16px; height: 16px; font-size: 8px; }
+.marker-atm { background: #43a047; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-border { background: #f9a825; color: #000; width: 16px; height: 16px; font-size: 8px; }
+.marker-restarea { background: #5c6bc0; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-ford { background: #0288d1; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-ferry { background: #00838f; color: #fff; width: 16px; height: 16px; font-size: 8px; }
+.marker-spring { background: #26c6da; color: #fff; width: 14px; height: 14px; font-size: 7px; }
+.marker-embassy { background: #8e24aa; color: #fff; width: 14px; height: 14px; font-size: 7px; }
 .marker-tower { width: 12px; height: 12px; font-size: 6px; }
 .marker-tower.spark { background: var(--spark-color); color: #000; }
 .marker-tower.vodafone { background: var(--vodafone-color); color: #fff; }

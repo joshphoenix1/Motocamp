@@ -235,6 +235,8 @@ const Layers = {
     const overpassCategories = [
       'campsites', 'fuel', 'water', 'toilets', 'shops', 'shelters',
       'dumpStations', 'repairs', 'picnicSites', 'viewpoints', 'passes', 'accommodation',
+      'hospitals', 'atms', 'borderCrossings', 'restAreas', 'fords', 'ferries',
+      'waterSources', 'embassies',
     ];
 
     for (const cat of overpassCategories) {
@@ -307,6 +309,38 @@ const Layers = {
         // Pass/viewpoint elevation
         if ((category === 'passes' || category === 'viewpoints') && props.ele) {
           popup += `<br><span style="font-size:0.8em">Elevation: ${props.ele}m</span>`;
+        }
+
+        // Hospital — emergency info
+        if (category === 'hospitals') {
+          if (props.emergency === 'yes') popup += `<br><span style="font-size:0.8em;color:#ff5252;font-weight:600">Emergency / A&E</span>`;
+          if (props.healthcare) popup += `<br><span style="font-size:0.75em">${props.healthcare}</span>`;
+        }
+
+        // Border crossing
+        if (category === 'borderCrossings') {
+          if (props.border_type) popup += `<br><span style="font-size:0.8em">${props.border_type}</span>`;
+        }
+
+        // Ford — depth
+        if (category === 'fords' && props.depth) {
+          popup += `<br><span style="font-size:0.8em">Depth: ${props.depth}m</span>`;
+        }
+
+        // Water sources — drinkability
+        if (category === 'waterSources') {
+          if (props.drinking_water === 'yes') popup += `<br><span style="font-size:0.8em;color:var(--accent)">Safe to drink</span>`;
+          else popup += `<br><span style="font-size:0.8em;color:#ffab40">Filter/treat required</span>`;
+        }
+
+        // Embassy — country
+        if (category === 'embassies' && props.country) {
+          popup += `<br><span style="font-size:0.8em">${props.country}</span>`;
+        }
+
+        // ATM — network/operator
+        if (category === 'atms' && props.network) {
+          popup += `<br><span style="font-size:0.75em">${props.network}</span>`;
         }
 
         popup += '</div>';
@@ -717,7 +751,8 @@ const Layers = {
     }
 
     // Also count Overpass-loaded markers if available
-    const overpassMap = { campsites: 'overpass-campsites', fuel: 'overpass-fuel', water: 'overpass-water', shops: 'overpass-shops', toilets: 'overpass-toilets' };
+    const overpassMap = { campsites: 'overpass-campsites', fuel: 'overpass-fuel', water: 'overpass-water', shops: 'overpass-shops', toilets: 'overpass-toilets', hospitals: 'overpass-hospitals' };
+    result.hospitals = 0;
     for (const [type, key] of Object.entries(overpassMap)) {
       const group = this.groups[key];
       if (!group) continue;
