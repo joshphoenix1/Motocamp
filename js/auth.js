@@ -1,8 +1,7 @@
 /* ===== User Auth & Data Sync via Supabase ===== */
 const Auth = {
-  // ⚠️ Replace these with your Supabase project values
-  SUPABASE_URL: 'https://YOUR_PROJECT.supabase.co',
-  SUPABASE_ANON_KEY: 'YOUR_ANON_KEY',
+  SUPABASE_URL: 'https://ouvontpojtaygamephte.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_s3sS4j1G-nHHEyaArio5dQ_UBtglZxL',
 
   _client: null,
   _user: null,
