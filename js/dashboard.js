@@ -588,9 +588,9 @@
     const orient = (screen.orientation || {}).angle || window.orientation || 0;
     let lateral;
     switch (orient) {
-      case 90:   lateral = -accel.y; break;  // landscape left (home button right)
+      case 90:   lateral =  accel.y; break;  // landscape left (home button right)
       case -90:
-      case 270:  lateral =  accel.y; break;  // landscape right (home button left)
+      case 270:  lateral = -accel.y; break;  // landscape right (home button left)
       default:   lateral =  accel.x; break;  // portrait
     }
 
