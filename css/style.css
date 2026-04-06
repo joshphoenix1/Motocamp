@@ -902,10 +902,10 @@ body.dashboard-active {
 }
 
 .dash-radar-title {
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--text-secondary);
+  letter-spacing: 3px;
+  color: var(--text-primary);
 }
 
 .dash-radar-wrap {
@@ -987,7 +987,7 @@ body.dashboard-active {
 }
 
 .dash-speed-max {
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -1003,7 +1003,7 @@ body.dashboard-active {
 }
 
 .dash-lean-readout {
-  font-size: 0.85rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
