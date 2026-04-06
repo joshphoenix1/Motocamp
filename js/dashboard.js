@@ -53,6 +53,9 @@
   let peakLeanRight = 0;
   let leanCalibration = 0;    // offset for non-vertical mounts
 
+  // Lean peak reset
+  let peakResetInterval = null;
+
   // Radar
   let radarTimestamps = null;
   let radarTileCache = {};
@@ -181,6 +184,18 @@
       // Start accelerometer for lean angle
       startLeanTracking();
 
+      // Reset peak lean every 60 seconds
+      if (peakResetInterval) clearInterval(peakResetInterval);
+      peakResetInterval = setInterval(() => {
+        peakLeanLeft = 0;
+        peakLeanRight = 0;
+        // Clear peak tick marks
+        const pl = document.getElementById('dash-lean-peak-left');
+        const pr = document.getElementById('dash-lean-peak-right');
+        if (pl) { pl.setAttribute('x1', 0); pl.setAttribute('y1', 0); pl.setAttribute('x2', 0); pl.setAttribute('y2', 0); }
+        if (pr) { pr.setAttribute('x1', 0); pr.setAttribute('y1', 0); pr.setAttribute('x2', 0); pr.setAttribute('y2', 0); }
+      }, 60000);
+
       // Load saved target and wire up UI
       loadCompassTarget();
       setupCompassUI();
@@ -228,6 +243,7 @@
         gpsCheckInterval = null;
       }
       stopLeanTracking();
+      if (peakResetInterval) { clearInterval(peakResetInterval); peakResetInterval = null; }
       stopRadar();
 
       releaseWakeLock();
