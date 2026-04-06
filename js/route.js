@@ -418,111 +418,96 @@ const RoutePlanner = {
   },
 
   // Find unpaved roads along the route corridor via Overpass
+  // Find gravel/unpaved roads along the route using small spot queries (fast)
   async findGravelWaypoints(start, end, allPoints) {
-    if (typeof OverpassLoader === 'undefined') {
-      // Fallback to static NZ data
-      if (typeof GravelRoads !== 'undefined') {
-        return GravelRoads.getGravelWaypoints(start.lat, start.lng, end.lat, end.lng);
-      }
-      return [];
-    }
-
     const routeLen = Utils.distance(start.lat, start.lng, end.lat, end.lng);
+    if (routeLen < 5) return []; // too short
 
-    // Build a bbox corridor along the straight line, padded by ~30km
-    // For long routes, sample intermediate points to build a tighter corridor
-    const samplePoints = [start];
-    if (allPoints.length > 2) {
-      for (let i = 1; i < allPoints.length - 1; i++) samplePoints.push(allPoints[i]);
+    // Sample 5 points evenly along the straight line between start and end
+    const SPOTS = 5;
+    const spotRadius = 0.25; // ~25km box around each spot
+    const queries = [];
+
+    for (let i = 1; i <= SPOTS; i++) {
+      const t = i / (SPOTS + 1);
+      const lat = start.lat + t * (end.lat - start.lat);
+      const lon = start.lng + t * (end.lng - start.lng);
+      const bbox = `${lat - spotRadius},${lon - spotRadius},${lat + spotRadius},${lon + spotRadius}`;
+
+      // Fast query — track grades 1-3 + surface-tagged roads
+      const query = `(way["highway"="track"]["tracktype"~"grade1|grade2|grade3"](${bbox});way["highway"~"unclassified|tertiary"]["surface"~"unpaved|gravel|dirt|compacted|fine_gravel"](${bbox}););out center body qt 20;`;
+      queries.push({ lat, lon, query });
     }
-    samplePoints.push(end);
 
-    // Find bbox covering all points with padding (~30km ≈ 0.27°)
-    const PAD = 0.3;
-    let south = 90, north = -90, west = 180, east = -180;
-    for (const p of samplePoints) {
-      south = Math.min(south, p.lat);
-      north = Math.max(north, p.lat);
-      west = Math.min(west, p.lng);
-      east = Math.max(east, p.lng);
-    }
-    south -= PAD; north += PAD; west -= PAD; east += PAD;
-
-    // Query for unpaved roads that are vehicle-passable
-    // highway=track (grade1-3 only — passable by normal vehicles)
-    // highway=unclassified/tertiary/secondary with surface=unpaved/gravel/dirt/compacted
-    // Exclude track grade4/5 (4x4 only or worse)
-    const bbox = `${south},${west},${north},${east}`;
-    const query = `(
-      way["highway"="track"]["tracktype"~"grade1|grade2|grade3"](${bbox});
-      way["highway"~"unclassified|tertiary|secondary"]["surface"~"unpaved|gravel|dirt|compacted|earth|fine_gravel"](${bbox});
-    );out center body;`;
-
+    // Run all spot queries in parallel for speed
+    const allElements = [];
     try {
-      const elements = await OverpassLoader.fetchOverpass(query);
-      if (!elements || elements.length === 0) return [];
-
-      // Filter to roads that are roughly between start and end (not massive detours)
-      const maxDetourRatio = 0.25; // max 25% extra distance
-      const candidates = [];
-
-      for (const el of elements) {
-        if (!el.center) continue;
-        const lat = el.center.lat;
-        const lon = el.center.lon;
-        const distToStart = Utils.distance(lat, lon, start.lat, start.lng);
-        const distToEnd = Utils.distance(lat, lon, end.lat, end.lng);
-        const totalVia = distToStart + distToEnd;
-        const detour = totalVia - routeLen;
-
-        // Must be between start and end (not behind either)
-        if (distToStart < routeLen * 0.05 || distToEnd < routeLen * 0.05) continue;
-        // Detour must be small
-        if (detour > routeLen * maxDetourRatio) continue;
-
-        const name = el.tags?.name || el.tags?.ref || 'Unpaved road';
-        const surface = el.tags?.surface || 'unpaved';
-        const tracktype = el.tags?.tracktype || '';
-
-        candidates.push({
-          lat, lon, name: `${name} (${surface})`,
-          detour, distToStart, surface, tracktype,
-        });
+      const results = await Promise.all(
+        queries.map(q =>
+          (typeof OverpassLoader !== 'undefined'
+            ? OverpassLoader.fetchOverpass(q.query)
+            : Promise.resolve([])
+          ).catch(() => [])
+        )
+      );
+      for (const els of results) {
+        if (els) allElements.push(...els);
       }
-
-      if (candidates.length === 0) return [];
-
-      // Sort by smallest detour
-      candidates.sort((a, b) => a.detour - b.detour);
-
-      // Pick up to 3 waypoints, well-spaced along the route
-      const picked = [];
-      const minSpacing = routeLen * 0.15; // at least 15% of route apart
-
-      for (const c of candidates) {
-        let tooClose = false;
-        for (const p of picked) {
-          if (Utils.distance(c.lat, c.lon, p.lat, p.lon) < minSpacing) {
-            tooClose = true;
-            break;
-          }
-        }
-        if (!tooClose) {
-          picked.push(c);
-          if (picked.length >= 3) break;
-        }
-      }
-
-      console.log(`Gravel: found ${elements.length} unpaved roads, ${candidates.length} on route, picked ${picked.length}`);
-      return picked;
     } catch (e) {
-      console.warn('Gravel road search failed:', e);
-      // Fallback to static NZ data
+      console.warn('Gravel search failed:', e);
+    }
+
+    // Fallback to static NZ data if no results
+    if (allElements.length === 0) {
       if (typeof GravelRoads !== 'undefined') {
         return GravelRoads.getGravelWaypoints(start.lat, start.lng, end.lat, end.lng);
       }
       return [];
     }
+
+    // Deduplicate by way ID
+    const seen = new Set();
+    const unique = [];
+    for (const el of allElements) {
+      if (!el.center || seen.has(el.id)) continue;
+      seen.add(el.id);
+      unique.push(el);
+    }
+
+    // Filter: must be roughly on the route (max 25% detour)
+    const maxDetour = routeLen * 0.25;
+    const candidates = [];
+
+    for (const el of unique) {
+      const lat = el.center.lat;
+      const lon = el.center.lon;
+      const distToStart = Utils.distance(lat, lon, start.lat, start.lng);
+      const distToEnd = Utils.distance(lat, lon, end.lat, end.lng);
+      const detour = (distToStart + distToEnd) - routeLen;
+
+      if (distToStart < routeLen * 0.05 || distToEnd < routeLen * 0.05) continue;
+      if (detour > maxDetour) continue;
+
+      const name = el.tags?.name || el.tags?.ref || 'Unpaved road';
+      const surface = el.tags?.surface || el.tags?.tracktype || 'unpaved';
+      candidates.push({ lat, lon, name: `${name} (${surface})`, detour, distToStart });
+    }
+
+    if (candidates.length === 0) return [];
+
+    // Sort by smallest detour, pick up to 3 well-spaced
+    candidates.sort((a, b) => a.detour - b.detour);
+    const picked = [];
+    const minSpacing = routeLen * 0.12;
+
+    for (const c of candidates) {
+      if (picked.some(p => Utils.distance(c.lat, c.lon, p.lat, p.lon) < minSpacing)) continue;
+      picked.push(c);
+      if (picked.length >= 3) break;
+    }
+
+    console.log(`Gravel: ${unique.length} roads found, ${candidates.length} on route, picked ${picked.length}`);
+    return picked;
   },
 
   async generateRouteWarnings(points, routeCoords) {
