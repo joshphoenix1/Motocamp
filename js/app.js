@@ -452,5 +452,5 @@
     }).catch(err => console.warn('[SW] Registration failed:', err));
   }
 
-  console.log('MotoCamp initialized successfully!');
+  console.log('Long Way Home initialized successfully!');
 })();

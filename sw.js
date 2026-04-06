@@ -1,5 +1,5 @@
 /* ===== Service Worker — Offline Support ===== */
-const CACHE_NAME = 'motocamp-v1';
+const CACHE_NAME = 'lwh-v1';
 
 // Core app shell — always cache these
 const APP_SHELL = [
@@ -53,7 +53,7 @@ self.addEventListener('fetch', (event) => {
     if (url.pathname.includes('/tile/') || url.hostname.includes('tile.openstreetmap') ||
         url.hostname.includes('opentopomap') || url.hostname.includes('arcgisonline')) {
       event.respondWith(
-        caches.open('motocamp-tiles').then(cache =>
+        caches.open('lwh-tiles').then(cache =>
           cache.match(event.request).then(cached => {
             if (cached) return cached;
             return fetch(event.request).then(resp => {
@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
         .then(resp => {
           if (resp.ok) {
             const clone = resp.clone();
-            caches.open('motocamp-api').then(cache => cache.put(event.request, clone));
+            caches.open('lwh-api').then(cache => cache.put(event.request, clone));
           }
           return resp;
         })

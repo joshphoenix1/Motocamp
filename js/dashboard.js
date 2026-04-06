@@ -2,7 +2,7 @@
 (function() {
   'use strict';
 
-  const TARGET_STORAGE_KEY = 'motocamp-compass-target';
+  const TARGET_STORAGE_KEY = 'lwh-compass-target';
 
   let watchId = null;
   let maxSpeed = 0;

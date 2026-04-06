@@ -819,9 +819,9 @@ const RoutePlanner = {
       timestamp: Date.now()
     };
 
-    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    const saved = JSON.parse(localStorage.getItem('lwh-routes') || '[]');
     saved.push(route);
-    localStorage.setItem('motocamp-routes', JSON.stringify(saved));
+    localStorage.setItem('lwh-routes', JSON.stringify(saved));
     this.loadSavedRoutes();
   },
 
@@ -829,7 +829,7 @@ const RoutePlanner = {
     const list = document.getElementById('saved-routes-list');
     if (!list) return;
 
-    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    const saved = JSON.parse(localStorage.getItem('lwh-routes') || '[]');
 
     if (saved.length === 0) {
       list.innerHTML = '<p style="font-size:0.78rem;color:var(--text-muted)">No saved routes yet.</p>';
@@ -853,7 +853,7 @@ const RoutePlanner = {
   },
 
   loadRoute(index) {
-    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    const saved = JSON.parse(localStorage.getItem('lwh-routes') || '[]');
     const route = saved[index];
     if (!route) return;
 
@@ -893,9 +893,9 @@ const RoutePlanner = {
   },
 
   deleteRoute(index) {
-    const saved = JSON.parse(localStorage.getItem('motocamp-routes') || '[]');
+    const saved = JSON.parse(localStorage.getItem('lwh-routes') || '[]');
     saved.splice(index, 1);
-    localStorage.setItem('motocamp-routes', JSON.stringify(saved));
+    localStorage.setItem('lwh-routes', JSON.stringify(saved));
     this.loadSavedRoutes();
   }
 };

@@ -1,6 +1,6 @@
 /* ===== Overpass API Loader — Viewport-driven POI fetching with IndexedDB cache ===== */
 const OverpassLoader = {
-  DB_NAME: 'motocamp-poi-cache',
+  DB_NAME: 'lwh-poi-cache',
   DB_VERSION: 1,
   CACHE_TTL: 7 * 24 * 60 * 60 * 1000, // 7 days
   GRID_SIZE: 1.0, // degrees — cache grid granularity
