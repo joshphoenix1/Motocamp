@@ -946,7 +946,7 @@
     for (let i = 0; i < PRECIP_GRID_SIZE; i++) {
       for (let j = 0; j < PRECIP_GRID_SIZE; j++) {
         const precip = grid[i][j];
-        if (precip < 0.1) continue; // skip dry cells
+        if (precip <= 0) continue; // show even trace amounts
 
         // Grid point position relative to current rider position (in km)
         const gridIdx = i * PRECIP_GRID_SIZE + j;
