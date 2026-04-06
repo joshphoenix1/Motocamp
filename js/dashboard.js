@@ -13,6 +13,7 @@
   let lastGpsTime = 0;
   let compassHeading = null; // device compass fallback
   let gpsHeading = null;
+  let lastGpsHeadingTime = 0;
   let lastGpsSpeed = 0;
   let gpsCheckInterval = null;
 
@@ -357,11 +358,27 @@
     lastGpsSpeed = speedKmh;
     if (heading !== null && speedKmh > 5) {
       gpsHeading = heading;
+      lastGpsHeadingTime = Date.now();
     }
 
-    // Use GPS heading when moving, compass when stationary
-    const bestHeading = (speedKmh > 5 && gpsHeading !== null) ? gpsHeading : compassHeading;
-    currentHeading = bestHeading;
+    // When moving: use GPS heading (accurate).
+    // When stopped: hold last GPS heading, only blend toward compass slowly.
+    if (speedKmh > 5 && gpsHeading !== null) {
+      currentHeading = gpsHeading;
+    } else if (gpsHeading !== null) {
+      // Stopped — hold GPS heading for 10s, then blend toward compass
+      const staleSec = (Date.now() - lastGpsHeadingTime) / 1000;
+      if (staleSec < 10 || compassHeading === null) {
+        currentHeading = gpsHeading; // hold GPS heading
+      } else {
+        // Slow blend: 0 at 10s, full compass at ~30s
+        const blend = Math.min(1, (staleSec - 10) / 20);
+        const delta = ((compassHeading - gpsHeading + 540) % 360) - 180;
+        currentHeading = (gpsHeading + delta * blend + 360) % 360;
+      }
+    } else {
+      currentHeading = compassHeading;
+    }
     const hdg = bestHeading !== null ? Math.round(bestHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
     updateStatsStrip();
@@ -526,10 +543,23 @@
 
     if (heading !== null) {
       compassHeading = heading;
-      // Update display with compass heading when stationary
+      // When stationary, blend heading toward compass gradually
+      // (the blend logic lives in onPosition — here we just trigger an update)
       if (lastGpsSpeed <= 5) {
-        currentHeading = heading;
-        const hdg = Math.round(heading);
+        // Recompute blended heading
+        if (gpsHeading !== null) {
+          const staleSec = (Date.now() - lastGpsHeadingTime) / 1000;
+          if (staleSec < 10) {
+            currentHeading = gpsHeading;
+          } else {
+            const blend = Math.min(1, (staleSec - 10) / 20);
+            const delta = ((compassHeading - gpsHeading + 540) % 360) - 180;
+            currentHeading = (gpsHeading + delta * blend + 360) % 360;
+          }
+        } else {
+          currentHeading = heading;
+        }
+        const hdg = Math.round(currentHeading);
         const headingEl = document.getElementById('dash-heading-value');
         if (headingEl) {
           const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
