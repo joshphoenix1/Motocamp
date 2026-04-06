@@ -379,15 +379,15 @@
     } else {
       currentHeading = compassHeading;
     }
-    const hdg = bestHeading !== null ? Math.round(bestHeading) : null;
+    const hdg = currentHeading !== null ? Math.round(currentHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
     updateStatsStrip();
     updateCompassArrow();
     updateRadar();
 
-    // Update elevation profile every 500m
-    if (tripDistance - lastElevUpdateDist > 500) {
-      lastElevUpdateDist = tripDistance;
+    // Update elevation profile on first fix and every 500m
+    if (lastElevUpdateDist === 0 || tripDistance - lastElevUpdateDist > 500) {
+      lastElevUpdateDist = Math.max(tripDistance, 1); // avoid re-triggering at 0
       updateElevationProfile();
     }
   }
