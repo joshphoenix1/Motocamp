@@ -361,19 +361,29 @@ body {
   z-index: 500;
 }
 .map-btn {
-  width: 40px; height: 40px;
+  width: auto; height: auto;
+  padding: 8px 10px;
   background: var(--bg-secondary);
   border: 1px solid var(--bg-tertiary);
   border-radius: var(--radius);
   color: var(--text-primary);
   font-size: 1rem;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; gap: 6px;
   transition: all var(--transition);
   box-shadow: var(--shadow);
 }
+.map-btn-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
 .map-btn:hover { background: var(--bg-tertiary); color: var(--accent); }
+.map-btn:hover .map-btn-label { color: var(--accent); }
 .map-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.map-btn.active .map-btn-label { color: #fff; }
 
 /* ===== Weather Tile Overlays ===== */
 .weather-tile-temperature { filter: saturate(2.5) contrast(1.8) brightness(1.1); }
