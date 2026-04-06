@@ -892,17 +892,26 @@ body.dashboard-active {
 
 /* Left column: radar */
 .dash-left-col {
-  flex: 0 0 130px;
+  flex: 0 0 180px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 8px;
+  gap: 4px;
+}
+
+.dash-radar-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
 }
 
 .dash-radar-wrap {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: min(150px, 38vh);
+  height: min(150px, 38vh);
   border-radius: 50%;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.08);
@@ -917,7 +926,7 @@ body.dashboard-active {
 
 .dash-radar-label {
   position: absolute;
-  bottom: -2px;
+  bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.55rem;
@@ -925,17 +934,6 @@ body.dashboard-active {
   background: rgba(10,14,20,0.85);
   padding: 1px 5px;
   border-radius: 3px;
-}
-
-.dash-radar-title {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--text-secondary);
 }
 
 /* Centre column: speed + lean */

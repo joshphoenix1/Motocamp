@@ -207,8 +207,8 @@
       window.addEventListener('orientationchange', screenOrientationListener);
       window.addEventListener('resize', screenOrientationListener);
 
-      // Fetch radar data
-      fetchRadarTimestamps();
+      // Fetch precipitation data for radar
+      fetchPrecipGrid();
     } catch (e) {
       console.error('Dashboard open error:', e);
     }
@@ -641,17 +641,15 @@
   }
 
   function initLeanArcs() {
-    // Pre-compute background arc paths
     const svg = document.getElementById('dash-lean-arcs');
     if (!svg) return;
 
     const cx = 100, cy = 100, r = 92;
     const MAX_ANGLE = 45;
 
-    // Left arc: from 270° (bottom) sweeping counter-clockwise to (270 - MAX_ANGLE)
+    // Background arc paths
     const leftBg = document.getElementById('dash-lean-left-bg');
     const rightBg = document.getElementById('dash-lean-right-bg');
-
     if (leftBg) leftBg.setAttribute('d', describeArc(cx, cy, r, 270 - MAX_ANGLE, 270));
     if (rightBg) rightBg.setAttribute('d', describeArc(cx, cy, r, 270, 270 + MAX_ANGLE));
 
@@ -660,6 +658,47 @@
     const rightArc = document.getElementById('dash-lean-right');
     if (leftArc) leftArc.setAttribute('d', '');
     if (rightArc) rightArc.setAttribute('d', '');
+
+    // Remove old tick marks (in case of re-init on orientation change)
+    svg.querySelectorAll('.lean-tick').forEach(el => el.remove());
+
+    // Add degree tick marks at 10, 20, 30, 40 on both sides
+    const ticks = [10, 20, 30, 40];
+    const innerR = r - 4;
+    const outerR = r + 4;
+    const labelR = r + 14;
+
+    ticks.forEach(angle => {
+      // Both left and right
+      [270 - angle, 270 + angle].forEach((deg, side) => {
+        const rad = deg * Math.PI / 180;
+
+        // Tick line
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('class', 'lean-tick');
+        line.setAttribute('x1', cx + innerR * Math.cos(rad));
+        line.setAttribute('y1', cy + innerR * Math.sin(rad));
+        line.setAttribute('x2', cx + outerR * Math.cos(rad));
+        line.setAttribute('y2', cy + outerR * Math.sin(rad));
+        line.setAttribute('stroke', 'rgba(255,255,255,0.15)');
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(line);
+
+        // Label
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('class', 'lean-tick');
+        text.setAttribute('x', cx + labelR * Math.cos(rad));
+        text.setAttribute('y', cy + labelR * Math.sin(rad));
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'central');
+        text.setAttribute('fill', 'rgba(255,255,255,0.12)');
+        text.setAttribute('font-size', '8');
+        text.setAttribute('font-family', 'Inter, sans-serif');
+        text.textContent = angle + '°';
+        svg.appendChild(text);
+      });
+    });
   }
 
   function updateLeanDisplay(lean) {
@@ -729,39 +768,71 @@
     return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
   }
 
-  // ===== Weather Radar Minimap (RainViewer API) =====
+  // ===== Weather Radar Minimap (Open-Meteo precipitation grid) =====
+  // RainViewer has almost no radar coverage in NZ. Instead we use Open-Meteo's
+  // precipitation forecast on a grid around the rider. This gives reliable
+  // global coverage including NZ, and shows forecast rain (next 3h), not just
+  // current radar returns.
 
-  function fetchRadarTimestamps() {
-    fetch('https://api.rainviewer.com/public/weather-maps.json')
+  let precipGrid = null;     // { lats[], lons[], precip[][], time }
+  const PRECIP_GRID_SIZE = 7; // 7x7 = 49 points
+  const PRECIP_SPACING_DEG = 0.12; // ~13km spacing → ~80km total coverage
+  const RADAR_RANGE_KM = 30;
+
+  function fetchPrecipGrid() {
+    if (!currentLat || !currentLng) return;
+
+    const lats = [], lons = [];
+    const half = Math.floor(PRECIP_GRID_SIZE / 2);
+    for (let i = -half; i <= half; i++) {
+      for (let j = -half; j <= half; j++) {
+        lats.push((currentLat + i * PRECIP_SPACING_DEG).toFixed(2));
+        lons.push((currentLng + j * PRECIP_SPACING_DEG / Math.cos(currentLat * Math.PI / 180)).toFixed(2));
+      }
+    }
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}` +
+      '&hourly=precipitation&forecast_hours=3&forecast_days=1';
+
+    fetch(url)
       .then(r => r.json())
       .then(data => {
-        if (data.radar && data.radar.past) {
-          radarTimestamps = data.radar.past;
-          lastRadarFetch = Date.now();
-          updateRadar();
+        const points = Array.isArray(data) ? data : [data];
+        const grid = [];
+        for (let i = 0; i < PRECIP_GRID_SIZE; i++) {
+          grid[i] = [];
+          for (let j = 0; j < PRECIP_GRID_SIZE; j++) {
+            const idx = i * PRECIP_GRID_SIZE + j;
+            const hourly = points[idx]?.hourly?.precipitation || [0, 0, 0];
+            // Max precipitation over next 3 hours
+            grid[i][j] = Math.max(...hourly);
+          }
         }
+        precipGrid = {
+          lats: lats.map(Number),
+          lons: lons.map(Number),
+          grid: grid,
+          centerLat: currentLat,
+          centerLng: currentLng,
+          time: Date.now()
+        };
+        lastRadarFetch = Date.now();
+        drawRadar();
       })
       .catch(() => {});
   }
 
-  // Convert lat/lng to pixel position within the global tile grid
-  function lngToTilePixel(lng, zoom) {
-    return ((lng + 180) / 360) * Math.pow(2, zoom) * 256;
-  }
-  function latToTilePixel(lat, zoom) {
-    const latRad = lat * Math.PI / 180;
-    return ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * Math.pow(2, zoom) * 256;
-  }
-
   function updateRadar() {
-    if (!radarTimestamps || !currentLat || !currentLng) return;
+    if (!currentLat || !currentLng) return;
 
-    // Refresh radar timestamps every 10 minutes
-    if (Date.now() - lastRadarFetch > 10 * 60 * 1000) {
-      fetchRadarTimestamps();
-      return;
+    // Fetch new data every 10 minutes
+    if (!precipGrid || Date.now() - lastRadarFetch > 10 * 60 * 1000) {
+      fetchPrecipGrid();
     }
+    drawRadar();
+  }
 
+  function drawRadar() {
     const canvas = document.getElementById('dash-radar-canvas');
     if (!canvas) return;
 
@@ -787,7 +858,7 @@
     ctx.fillStyle = '#0f161e';
     ctx.fillRect(0, 0, size, size);
 
-    // Crosshair lines (subtle grid to show it's "alive")
+    // Crosshair lines
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
@@ -795,7 +866,7 @@
     ctx.moveTo(0, cy); ctx.lineTo(size, cy);
     ctx.stroke();
 
-    // Range rings
+    // Range rings (15km and ~27km)
     ctx.strokeStyle = 'rgba(255,255,255,0.07)';
     ctx.lineWidth = 0.5;
     ctx.setLineDash([3, 4]);
@@ -803,82 +874,82 @@
     ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius * 0.9, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Get latest radar timestamp
-    const latest = radarTimestamps[radarTimestamps.length - 1];
-    if (latest) {
-      drawRadarTiles(ctx, latest, cx, cy, radius, size);
+    // Draw precipitation blobs if we have data
+    if (precipGrid && precipGrid.grid) {
+      drawPrecipBlobs(ctx, cx, cy, radius, size);
     }
 
     ctx.restore();
     drawRadarOverlay(ctx, cx, cy, radius, size);
   }
 
-  function drawRadarTiles(ctx, latest, cx, cy, radius, size) {
-    const zoom = 7; // Each tile ~160km at NZ latitudes — one tile covers our 40km view
-    const n = Math.pow(2, zoom);
+  function drawPrecipBlobs(ctx, cx, cy, radius, size) {
+    const grid = precipGrid.grid;
+    const half = Math.floor(PRECIP_GRID_SIZE / 2);
 
-    // Rider's pixel position in the global tile grid
-    const riderPx = lngToTilePixel(currentLng, zoom);
-    const riderPy = latToTilePixel(currentLat, zoom);
+    // Degrees per km at rider's latitude
+    const kmPerDegLat = 111.32;
+    const kmPerDegLng = 111.32 * Math.cos(currentLat * Math.PI / 180);
+    const pxPerKm = radius / RADAR_RANGE_KM;
 
-    // Determine which tile the rider is on
-    const centerTileX = Math.floor(riderPx / 256);
-    const centerTileY = Math.floor(riderPy / 256);
-
-    // How many pixels per km at this zoom & latitude
-    const metersPerPixel = (156543.03 * Math.cos(currentLat * Math.PI / 180)) / Math.pow(2, zoom);
-    const pxPerKm = 1000 / metersPerPixel;
-    const rangeKm = 20;
-    const canvasScale = radius / (rangeKm * pxPerKm); // canvas pixels per tile pixel
-
-    // Rotation for heading-up
+    // Heading rotation
     const headingRad = currentHeading ? -currentHeading * Math.PI / 180 : 0;
 
-    // Load & draw a 3x3 grid of tiles around the rider
-    let allLoaded = true;
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const tx = centerTileX + dx;
-        const ty = centerTileY + dy;
-        const tileKey = `${latest.path}/${zoom}/${tx}/${ty}`;
+    for (let i = 0; i < PRECIP_GRID_SIZE; i++) {
+      for (let j = 0; j < PRECIP_GRID_SIZE; j++) {
+        const precip = grid[i][j];
+        if (precip < 0.1) continue; // skip dry cells
 
-        if (radarTileCache[tileKey]) {
-          // Tile's top-left corner in global pixel space, relative to rider
-          const offsetPx = (tx * 256 - riderPx) * canvasScale;
-          const offsetPy = (ty * 256 - riderPy) * canvasScale;
-          const tileSize = 256 * canvasScale;
+        // Grid point position relative to current rider position (in km)
+        const gridIdx = i * PRECIP_GRID_SIZE + j;
+        const ptLat = precipGrid.lats[gridIdx];
+        const ptLng = precipGrid.lons[gridIdx];
+        const dxKm = (ptLng - currentLng) * kmPerDegLng;
+        const dyKm = (ptLat - currentLat) * kmPerDegLat;
 
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate(headingRad);
-          ctx.drawImage(radarTileCache[tileKey], offsetPx, offsetPy, tileSize, tileSize);
-          ctx.restore();
-        } else {
-          allLoaded = false;
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          const key = tileKey;
-          img.onload = () => {
-            radarTileCache[key] = img;
-            // Evict old entries (keep last 30)
-            const keys = Object.keys(radarTileCache);
-            if (keys.length > 30) {
-              for (let i = 0; i < keys.length - 30; i++) delete radarTileCache[keys[i]];
-            }
-            updateRadar(); // redraw when tile arrives
-          };
-          img.onerror = () => {
-            // Cache a 1x1 transparent pixel so we don't retry endlessly
-            const c = document.createElement('canvas');
-            c.width = 1; c.height = 1;
-            radarTileCache[key] = c;
-          };
-          img.src = `https://tilecache.rainviewer.com${latest.path}/256/${zoom}/${tx}/${ty}/4/1_1.png`;
+        // Convert to canvas pixels
+        let px = dxKm * pxPerKm;
+        let py = -dyKm * pxPerKm; // y-axis inverted on canvas
+
+        // Rotate for heading-up
+        if (headingRad) {
+          const cos = Math.cos(headingRad), sin = Math.sin(headingRad);
+          const rpx = px * cos - py * sin;
+          const rpy = px * sin + py * cos;
+          px = rpx;
+          py = rpy;
         }
+
+        const screenX = cx + px;
+        const screenY = cy + py;
+
+        // Skip if outside circle
+        const dist = Math.sqrt(px * px + py * py);
+        if (dist > radius) continue;
+
+        // Color by intensity
+        let color;
+        if (precip >= 10) color = 'rgba(255,50,50,0.7)';       // heavy
+        else if (precip >= 5) color = 'rgba(255,165,0,0.6)';    // moderate-heavy
+        else if (precip >= 2) color = 'rgba(255,220,50,0.5)';   // moderate
+        else if (precip >= 0.5) color = 'rgba(80,200,120,0.45)'; // light
+        else color = 'rgba(80,180,220,0.35)';                    // drizzle
+
+        // Blob size scales with intensity
+        const blobR = Math.max(6, Math.min(14, 6 + precip * 1.5)) * (size / 150);
+
+        // Soft radial gradient blob
+        const grad = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, blobR);
+        grad.addColorStop(0, color);
+        grad.addColorStop(1, color.replace(/[\d.]+\)$/, '0)'));
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, blobR, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
   }
@@ -904,11 +975,11 @@
     // North indicator (rotated to correct position in heading-up mode)
     if (currentHeading !== null) {
       const northRad = (-currentHeading) * Math.PI / 180;
-      const nr = radius - 7;
+      const nr = radius - 8;
       const nx = cx + nr * Math.sin(northRad);
       const ny = cy - nr * Math.cos(northRad);
       ctx.fillStyle = 'rgba(255,80,80,0.7)';
-      ctx.font = 'bold 7px Inter, sans-serif';
+      ctx.font = 'bold 8px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('N', nx, ny);
