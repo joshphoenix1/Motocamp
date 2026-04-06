@@ -439,6 +439,18 @@
     map.invalidateSize();
   });
 
+  // ===== Road Surface Overlay =====
+  if (typeof SurfaceOverlay !== 'undefined') {
+    SurfaceOverlay.init(map);
+    const surfaceToggle = document.getElementById('surface-overlay-toggle');
+    if (surfaceToggle) {
+      surfaceToggle.addEventListener('change', (e) => {
+        if (e.target.checked) SurfaceOverlay.enable();
+        else SurfaceOverlay.disable();
+      });
+    }
+  }
+
   // ===== Offline Maps =====
   if (typeof OfflineMaps !== 'undefined') OfflineMaps.init();
 
