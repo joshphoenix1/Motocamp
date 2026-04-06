@@ -194,7 +194,7 @@
         const pr = document.getElementById('dash-lean-peak-right');
         if (pl) { pl.setAttribute('x1', 0); pl.setAttribute('y1', 0); pl.setAttribute('x2', 0); pl.setAttribute('y2', 0); }
         if (pr) { pr.setAttribute('x1', 0); pr.setAttribute('y1', 0); pr.setAttribute('x2', 0); pr.setAttribute('y2', 0); }
-      }, 60000);
+      }, 90000);
 
       // Load saved target and wire up UI
       loadCompassTarget();
