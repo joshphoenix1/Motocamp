@@ -3,327 +3,108 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MotorCamp — Logo Picker</title>
+  <title>MotorCamp — Twin Peaks Logo</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0a0f1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 16px; }
+    body { background: #0a0f1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 16px; display: flex; flex-direction: column; align-items: center; }
     h1 { color: #00c853; font-size: 1.2rem; margin-bottom: 4px; }
-    .sub { color: #78909c; font-size: 0.8rem; margin-bottom: 20px; }
-    .grid { display: flex; flex-direction: column; gap: 16px; max-width: 480px; margin: 0 auto; }
-    .card {
-      background: #111827; border-radius: 12px; padding: 20px; text-align: center;
-      border: 2px solid transparent; cursor: pointer; transition: border-color 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .card:active, .card.selected { border-color: #00c853; }
-    .card h3 { font-size: 0.95rem; margin: 12px 0 4px; }
-    .card .desc { color: #78909c; font-size: 0.75rem; }
-    .icons { display: flex; gap: 12px; justify-content: center; align-items: flex-end; margin-top: 12px; }
-    .icons .i { border-radius: 18%; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
-    .label { font-size: 0.65rem; color: #546e7a; margin-top: 2px; }
+    .sub { color: #78909c; font-size: 0.8rem; margin-bottom: 24px; }
+    .section { background: #111827; border-radius: 12px; padding: 24px; margin-bottom: 16px; width: 100%; max-width: 480px; text-align: center; }
+    .section h2 { font-size: 0.9rem; color: #b0bec5; margin-bottom: 16px; }
+    .icon-row { display: flex; gap: 16px; justify-content: center; align-items: flex-end; flex-wrap: wrap; }
+    .icon-item { text-align: center; }
+    .icon-item img { border-radius: 18%; box-shadow: 0 2px 12px rgba(0,0,0,0.5); display: block; }
+    .icon-item .label { font-size: 0.65rem; color: #546e7a; margin-top: 6px; }
+    .svg-wrap { margin: 16px auto; }
+    .svg-wrap img { max-width: 100%; }
+    .tagline { color: #78909c; font-size: 0.75rem; letter-spacing: 2px; margin-top: 8px; text-transform: uppercase; }
+    .dark-row, .light-row { padding: 20px; border-radius: 8px; margin-top: 12px; display: flex; gap: 16px; justify-content: center; align-items: center; }
+    .dark-row { background: #0a0f1a; }
+    .light-row { background: #f0f0f0; }
   </style>
 </head>
 <body>
-  <h1>MotorCamp Logo</h1>
-  <p class="sub">Tap to select. Shown at actual app icon sizes.</p>
+  <h1>MotorCamp — Twin Peaks</h1>
+  <p class="sub">Final logo at all app icon sizes</p>
 
-  <div class="grid">
-
-    <!-- 1: Bold Peak + Road -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <h3>Bold Peak</h3>
-      <p class="desc">Single mountain, thick road line. Maximum clarity at any size.</p>
-      <div class="icons">
-        <div>
-          <div class="i" style="width:80px;height:80px;">
-            <svg viewBox="0 0 100 100" width="80" height="80">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M50,14 L16,68 L84,68 Z" fill="#0d2818" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
-              <path d="M44,26 L50,14 L56,26 L53,22 L50,24 L47,22 Z" fill="#e0e0e0" opacity="0.7"/>
-              <path d="M14,82 Q38,68 54,74 Q70,80 90,64" fill="none" stroke="#ffab40" stroke-width="5" stroke-linecap="round"/>
-              <circle cx="90" cy="64" r="6" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">80px</div>
-        </div>
-        <div>
-          <div class="i" style="width:60px;height:60px;">
-            <svg viewBox="0 0 100 100" width="60" height="60">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M50,14 L16,68 L84,68 Z" fill="#0d2818" stroke="#00c853" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M44,26 L50,14 L56,26" fill="#e0e0e0" opacity="0.7"/>
-              <path d="M14,82 Q38,68 54,74 Q70,80 90,64" fill="none" stroke="#ffab40" stroke-width="6" stroke-linecap="round"/>
-              <circle cx="90" cy="64" r="7" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">60px</div>
-        </div>
-        <div>
-          <div class="i" style="width:40px;height:40px;">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M50,16 L18,68 L82,68 Z" fill="#0d2818" stroke="#00c853" stroke-width="7" stroke-linejoin="round"/>
-              <path d="M16,84 Q44,68 56,76 Q72,84 90,66" fill="none" stroke="#ffab40" stroke-width="8" stroke-linecap="round"/>
-              <circle cx="90" cy="66" r="8" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">40px</div>
-        </div>
-      </div>
+  <!-- SVG version (sharp at any size) -->
+  <div class="section">
+    <h2>SVG (Vector)</h2>
+    <div class="svg-wrap">
+      <img src="icons/favicon.svg" width="160" height="160" style="border-radius:18%;box-shadow:0 4px 20px rgba(0,0,0,0.5);">
     </div>
-
-    <!-- 2: Twin Peaks + Road -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <h3>Twin Peaks</h3>
-      <p class="desc">Two overlapping peaks with depth. Road weaves between them.</p>
-      <div class="icons">
-        <div>
-          <div class="i" style="width:80px;height:80px;">
-            <svg viewBox="0 0 100 100" width="80" height="80">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <!-- Back peak -->
-              <path d="M62,18 L34,64 L90,64 Z" fill="#0d2818" stroke="#00c853" stroke-width="3" stroke-linejoin="round" opacity="0.5"/>
-              <!-- Front peak -->
-              <path d="M38,22 L8,68 L68,68 Z" fill="#0f1f14" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
-              <!-- Snow -->
-              <path d="M33,32 L38,22 L43,32 L41,28 L38,30 L35,28 Z" fill="#e0e0e0" opacity="0.6"/>
-              <path d="M58,28 L62,18 L66,28" fill="#e0e0e0" opacity="0.4"/>
-              <!-- Road -->
-              <path d="M10,84 Q34,72 50,78 Q66,84 92,66" fill="none" stroke="#ffab40" stroke-width="5" stroke-linecap="round"/>
-              <circle cx="92" cy="66" r="6" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">80px</div>
-        </div>
-        <div>
-          <div class="i" style="width:60px;height:60px;">
-            <svg viewBox="0 0 100 100" width="60" height="60">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M62,18 L34,64 L90,64 Z" fill="#0d2818" stroke="#00c853" stroke-width="4" stroke-linejoin="round" opacity="0.5"/>
-              <path d="M38,22 L8,68 L68,68 Z" fill="#0f1f14" stroke="#00c853" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M33,32 L38,22 L43,32" fill="#e0e0e0" opacity="0.6"/>
-              <path d="M10,84 Q34,72 50,78 Q66,84 92,66" fill="none" stroke="#ffab40" stroke-width="6" stroke-linecap="round"/>
-              <circle cx="92" cy="66" r="7" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">60px</div>
-        </div>
-        <div>
-          <div class="i" style="width:40px;height:40px;">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M62,20 L36,64 L88,64 Z" fill="#0d2818" stroke="#00c853" stroke-width="5" stroke-linejoin="round" opacity="0.5"/>
-              <path d="M38,24 L10,68 L66,68 Z" fill="#0f1f14" stroke="#00c853" stroke-width="6" stroke-linejoin="round"/>
-              <path d="M12,86 Q40,72 54,80 Q70,88 92,68" fill="none" stroke="#ffab40" stroke-width="8" stroke-linecap="round"/>
-              <circle cx="92" cy="68" r="8" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">40px</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3: Range Silhouette -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <h3>Range</h3>
-      <p class="desc">Solid filled mountain range with road. Reads like a badge.</p>
-      <div class="icons">
-        <div>
-          <div class="i" style="width:80px;height:80px;">
-            <svg viewBox="0 0 100 100" width="80" height="80">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <!-- Filled range -->
-              <path d="M4,68 L20,42 L32,52 L50,20 L64,40 L76,18 L92,44 L98,68 Z" fill="#00c853" opacity="0.2"/>
-              <path d="M4,68 L20,42 L32,52 L50,20 L64,40 L76,18 L92,44 L98,68" fill="none" stroke="#00c853" stroke-width="3.5" stroke-linejoin="round"/>
-              <!-- Snow -->
-              <path d="M46,28 L50,20 L54,28" fill="#fff" opacity="0.55"/>
-              <path d="M72,26 L76,18 L80,26" fill="#fff" opacity="0.55"/>
-              <!-- Road -->
-              <path d="M8,86 Q30,74 48,80 Q66,86 94,68" fill="none" stroke="#ffab40" stroke-width="5" stroke-linecap="round"/>
-              <circle cx="94" cy="68" r="6" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">80px</div>
-        </div>
-        <div>
-          <div class="i" style="width:60px;height:60px;">
-            <svg viewBox="0 0 100 100" width="60" height="60">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M4,68 L20,42 L32,52 L50,20 L64,40 L76,18 L92,44 L98,68 Z" fill="#00c853" opacity="0.2"/>
-              <path d="M4,68 L20,42 L32,52 L50,20 L64,40 L76,18 L92,44 L98,68" fill="none" stroke="#00c853" stroke-width="4.5" stroke-linejoin="round"/>
-              <path d="M46,28 L50,20 L54,28" fill="#fff" opacity="0.55"/>
-              <path d="M72,26 L76,18 L80,26" fill="#fff" opacity="0.55"/>
-              <path d="M8,86 Q30,74 48,80 Q66,86 94,68" fill="none" stroke="#ffab40" stroke-width="6" stroke-linecap="round"/>
-              <circle cx="94" cy="68" r="7" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">60px</div>
-        </div>
-        <div>
-          <div class="i" style="width:40px;height:40px;">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M6,68 L22,40 L36,50 L52,18 L68,38 L80,16 L96,42 L98,68 Z" fill="#00c853" opacity="0.25"/>
-              <path d="M6,68 L22,40 L36,50 L52,18 L68,38 L80,16 L96,42 L98,68" fill="none" stroke="#00c853" stroke-width="6" stroke-linejoin="round"/>
-              <path d="M10,88 Q36,74 52,82 Q70,90 94,70" fill="none" stroke="#ffab40" stroke-width="8" stroke-linecap="round"/>
-              <circle cx="94" cy="70" r="8" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">40px</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4: Minimal M -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <h3>The M</h3>
-      <p class="desc">Lettermark — the M in MotorCamp IS the mountain. Simplest, boldest.</p>
-      <div class="icons">
-        <div>
-          <div class="i" style="width:80px;height:80px;">
-            <svg viewBox="0 0 100 100" width="80" height="80">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <!-- M = mountains -->
-              <path d="M12,72 L30,24 L50,50 L70,24 L88,72" fill="none" stroke="#00c853" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
-              <!-- Snow caps -->
-              <path d="M26,34 L30,24 L34,34" fill="#fff" opacity="0.5"/>
-              <path d="M66,34 L70,24 L74,34" fill="#fff" opacity="0.5"/>
-              <!-- Road underneath -->
-              <path d="M10,86 Q34,76 50,82 Q66,88 92,74" fill="none" stroke="#ffab40" stroke-width="4.5" stroke-linecap="round"/>
-              <circle cx="92" cy="74" r="5" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">80px</div>
-        </div>
-        <div>
-          <div class="i" style="width:60px;height:60px;">
-            <svg viewBox="0 0 100 100" width="60" height="60">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M12,72 L30,24 L50,50 L70,24 L88,72" fill="none" stroke="#00c853" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
-              <path d="M26,34 L30,24 L34,34" fill="#fff" opacity="0.5"/>
-              <path d="M66,34 L70,24 L74,34" fill="#fff" opacity="0.5"/>
-              <path d="M10,88 Q34,76 50,82 Q66,88 92,74" fill="none" stroke="#ffab40" stroke-width="6" stroke-linecap="round"/>
-              <circle cx="92" cy="74" r="6" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">60px</div>
-        </div>
-        <div>
-          <div class="i" style="width:40px;height:40px;">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M14,72 L32,24 L50,50 L68,24 L86,72" fill="none" stroke="#00c853" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
-              <path d="M12,90 Q38,78 52,84 Q68,90 92,76" fill="none" stroke="#ffab40" stroke-width="8" stroke-linecap="round"/>
-              <circle cx="92" cy="76" r="8" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">40px</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5: Shield Badge -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <h3>Shield</h3>
-      <p class="desc">Mountain + road inside a shield shape. App store badge aesthetic.</p>
-      <div class="icons">
-        <div>
-          <div class="i" style="width:80px;height:80px;">
-            <svg viewBox="0 0 100 100" width="80" height="80">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <!-- Shield outline -->
-              <path d="M50,8 L86,22 L86,56 Q86,80 50,94 Q14,80 14,56 L14,22 Z" fill="#111827" stroke="#00c853" stroke-width="3"/>
-              <!-- Mountain inside shield -->
-              <path d="M50,26 L28,60 L72,60 Z" fill="none" stroke="#00c853" stroke-width="3" stroke-linejoin="round"/>
-              <path d="M46,34 L50,26 L54,34" fill="#fff" opacity="0.5"/>
-              <!-- Road -->
-              <path d="M24,76 Q40,66 50,72 Q60,78 78,66" fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round"/>
-              <circle cx="78" cy="66" r="4.5" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">80px</div>
-        </div>
-        <div>
-          <div class="i" style="width:60px;height:60px;">
-            <svg viewBox="0 0 100 100" width="60" height="60">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M50,8 L86,22 L86,56 Q86,80 50,94 Q14,80 14,56 L14,22 Z" fill="#111827" stroke="#00c853" stroke-width="4"/>
-              <path d="M50,26 L28,60 L72,60 Z" fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
-              <path d="M46,34 L50,26 L54,34" fill="#fff" opacity="0.5"/>
-              <path d="M24,76 Q40,66 50,72 Q60,78 78,66" fill="none" stroke="#ffab40" stroke-width="5" stroke-linecap="round"/>
-              <circle cx="78" cy="66" r="5" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">60px</div>
-        </div>
-        <div>
-          <div class="i" style="width:40px;height:40px;">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <path d="M50,8 L86,22 L86,56 Q86,80 50,94 Q14,80 14,56 L14,22 Z" fill="#111827" stroke="#00c853" stroke-width="5"/>
-              <path d="M50,28 L26,62 L74,62 Z" fill="none" stroke="#00c853" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M22,78 Q40,68 52,74 Q64,80 80,68" fill="none" stroke="#ffab40" stroke-width="6" stroke-linecap="round"/>
-              <circle cx="80" cy="68" r="6" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">40px</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6: Circle Badge -->
-    <div class="card" onclick="this.classList.toggle('selected')">
-      <h3>Circle</h3>
-      <p class="desc">Mountain + road in a circle. Clean, works as avatar/favicon everywhere.</p>
-      <div class="icons">
-        <div>
-          <div class="i" style="width:80px;height:80px;">
-            <svg viewBox="0 0 100 100" width="80" height="80">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <circle cx="50" cy="50" r="40" fill="#111827" stroke="#00c853" stroke-width="3"/>
-              <!-- Twin peaks -->
-              <path d="M36,26 L22,58 L50,58 Z" fill="none" stroke="#00c853" stroke-width="3" stroke-linejoin="round"/>
-              <path d="M62,22 L44,58 L80,58 Z" fill="none" stroke="#00c853" stroke-width="3" stroke-linejoin="round" opacity="0.6"/>
-              <path d="M33,34 L36,26 L39,34" fill="#fff" opacity="0.5"/>
-              <path d="M59,30 L62,22 L65,30" fill="#fff" opacity="0.4"/>
-              <!-- Road -->
-              <path d="M18,74 Q36,64 50,70 Q64,76 84,64" fill="none" stroke="#ffab40" stroke-width="4" stroke-linecap="round"/>
-              <circle cx="84" cy="64" r="4" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">80px</div>
-        </div>
-        <div>
-          <div class="i" style="width:60px;height:60px;">
-            <svg viewBox="0 0 100 100" width="60" height="60">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <circle cx="50" cy="50" r="40" fill="#111827" stroke="#00c853" stroke-width="4"/>
-              <path d="M36,28 L20,58 L52,58 Z" fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
-              <path d="M64,24 L46,58 L82,58 Z" fill="none" stroke="#00c853" stroke-width="3.5" stroke-linejoin="round" opacity="0.6"/>
-              <path d="M18,74 Q36,64 50,70 Q64,76 84,64" fill="none" stroke="#ffab40" stroke-width="5" stroke-linecap="round"/>
-              <circle cx="84" cy="64" r="5" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">60px</div>
-        </div>
-        <div>
-          <div class="i" style="width:40px;height:40px;">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <rect width="100" height="100" fill="#0a0f1a"/>
-              <circle cx="50" cy="50" r="40" fill="#111827" stroke="#00c853" stroke-width="5"/>
-              <path d="M38,28 L20,60 L56,60 Z" fill="none" stroke="#00c853" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M64,24 L46,60 L82,60 Z" fill="none" stroke="#00c853" stroke-width="4" stroke-linejoin="round" opacity="0.5"/>
-              <path d="M16,76 Q38,66 52,72 Q66,78 86,66" fill="none" stroke="#ffab40" stroke-width="6" stroke-linecap="round"/>
-              <circle cx="86" cy="66" r="6" fill="#ff5252"/>
-            </svg>
-          </div>
-          <div class="label">40px</div>
-        </div>
-      </div>
-    </div>
-
+    <p class="tagline">Love is a long road.</p>
   </div>
 
-  <p style="margin-top:20px;color:#546e7a;font-size:0.7rem;text-align:center">MotorCamp — Love is a long road.</p>
+  <!-- PNG icons at actual sizes -->
+  <div class="section">
+    <h2>App Icons (actual size)</h2>
+    <div class="icon-row">
+      <div class="icon-item">
+        <img src="icons/icon-512.png" width="80" height="80">
+        <div class="label">512px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/icon-192.png" width="64" height="64">
+        <div class="label">192px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/icon-144.png" width="48" height="48">
+        <div class="label">144px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/icon-96.png" width="40" height="40">
+        <div class="label">96px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/icon-48.png" width="32" height="32">
+        <div class="label">48px</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- On dark/light backgrounds -->
+  <div class="section">
+    <h2>On Dark Background</h2>
+    <div class="dark-row">
+      <img src="icons/icon-192.png" width="64" height="64" style="border-radius:18%;">
+      <div style="text-align:left">
+        <div style="font-weight:700;font-size:1.1rem;">MotorCamp</div>
+        <div style="font-size:0.7rem;color:#78909c;">Love is a long road.</div>
+      </div>
+    </div>
+    <h2 style="margin-top:16px;">On Light Background</h2>
+    <div class="light-row">
+      <img src="icons/icon-192.png" width="64" height="64" style="border-radius:18%;">
+      <div style="text-align:left">
+        <div style="font-weight:700;font-size:1.1rem;color:#1a1a2e;">MotorCamp</div>
+        <div style="font-size:0.7rem;color:#546e7a;">Love is a long road.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Favicon sizes -->
+  <div class="section">
+    <h2>Favicons & Touch Icons</h2>
+    <div class="icon-row">
+      <div class="icon-item">
+        <img src="icons/apple-touch-icon.png" width="60" height="60">
+        <div class="label">Apple Touch 180px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/icon-72.png" width="48" height="48">
+        <div class="label">72px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/favicon-32.png" width="32" height="32">
+        <div class="label">32px</div>
+      </div>
+      <div class="icon-item">
+        <img src="icons/favicon-16.png" width="16" height="16">
+        <div class="label">16px</div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
