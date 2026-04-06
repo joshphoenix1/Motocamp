@@ -651,6 +651,8 @@
       leanCalibSamples.push(rawLean);
       if (leanCalibSamples.length === LEAN_CALIB_COUNT) {
         leanCalibration = leanCalibSamples.reduce((a, b) => a + b, 0) / LEAN_CALIB_COUNT;
+        // Snap the EMA to zero so it doesn't drift in from a stale value
+        currentLean = 0;
       }
       return; // don't display during calibration
     }
