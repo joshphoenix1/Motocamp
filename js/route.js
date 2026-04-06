@@ -6,6 +6,8 @@ const RoutePlanner = {
   routeLine: null,
   gravelOverlays: [],
   elevationMarker: null,
+  _cachedGravelWPs: null,   // cached gravel waypoints for current route
+  _basePoints: null,         // route points without gravel injected
 
   init(map) {
     this.map = map;
@@ -18,15 +20,12 @@ const RoutePlanner = {
     document.getElementById('clear-route').addEventListener('click', () => this.clearRoute());
     document.getElementById('plan-route').addEventListener('click', () => this.planRoute());
 
-    // Re-route when gravel toggle changes (if route exists)
+    // Re-route when gravel toggle changes — uses cached gravel data (instant)
     const gravelToggle = document.getElementById('gravel-bias');
     if (gravelToggle) {
       gravelToggle.addEventListener('change', () => {
-        const startInput = document.getElementById('route-start');
-        const endInput = document.getElementById('route-end');
-        if (startInput.dataset.lat && endInput.dataset.lat) {
-          this.planRoute();
-        }
+        if (!this._basePoints) return;
+        this._rebuildRoute();
       });
     }
 
@@ -173,35 +172,35 @@ const RoutePlanner = {
       }
     });
 
-    let allPoints = [start, ...waypoints, end];
+    // Store base points (without gravel) for toggle re-use
+    this._basePoints = [start, ...waypoints, end];
+    this._cachedGravelWPs = null;
 
-    // Clear previous route
-    this.clearRouteDisplay();
+    // Pre-fetch gravel waypoints in background (don't block route display)
+    this.findGravelWaypoints(start, end, this._basePoints).then(wps => {
+      this._cachedGravelWPs = wps;
+      console.log(`Gravel: ${wps.length} waypoints cached for this route`);
+      // If gravel toggle is already on, rebuild with gravel now
+      if (document.getElementById('gravel-bias')?.checked && wps.length > 0) {
+        this._rebuildRoute();
+      }
+    }).catch(() => { this._cachedGravelWPs = []; });
 
+    // Build initial route (without gravel — instant)
+    let allPoints = [...this._basePoints];
     const gravelBias = document.getElementById('gravel-bias')?.checked;
 
-    // Inject gravel road waypoints if gravel mode is on
-    if (gravelBias) {
-      const gravelWPs = await this.findGravelWaypoints(start, end, allPoints);
-      if (gravelWPs.length > 0) {
-        console.log(`Gravel mode: injecting ${gravelWPs.length} waypoints:`,
-          gravelWPs.map(w => w.name || 'unnamed').join(', '));
-
-        const gravelLatLngs = gravelWPs.map(w => L.latLng(w.lat, w.lon));
-        allPoints = [start, ...waypoints, ...gravelLatLngs, end];
-
-        // Re-sort all middle points by distance from start
-        const middle = allPoints.slice(1, -1);
-        middle.sort((a, b) => {
-          const da = start.distanceTo(a);
-          const db = start.distanceTo(b);
-          return da - db;
-        });
-        allPoints = [start, ...middle, end];
-      }
+    // If we somehow already have cached gravel WPs (e.g. from a previous identical route), use them
+    if (gravelBias && this._cachedGravelWPs && this._cachedGravelWPs.length > 0) {
+      allPoints = this._injectGravel(this._basePoints, this._cachedGravelWPs);
     }
 
-    // Use OSRM for routing
+    this.clearRouteDisplay();
+    this._executeRoute(allPoints);
+  },
+
+  // Execute the OSRM routing with given waypoints
+  _executeRoute(allPoints) {
     try {
       this.routeControl = L.Routing.control({
         waypoints: allPoints,
@@ -247,8 +246,9 @@ const RoutePlanner = {
       }).addTo(this.map);
 
       this.routeControl.on('routesfound', async (e) => {
-        const route = e.routes[0];
-        const altRoutes = e.routes.slice(1);
+        const routes = e.routes;
+        const route = routes[0];
+        const altRoutes = routes.slice(1);
 
         // Highlight gravel segments
         this.clearGravelOverlays();
@@ -261,7 +261,6 @@ const RoutePlanner = {
 
     } catch (e) {
       console.error('Routing failed:', e);
-      // Fallback: draw straight lines
       this.routeLine = L.polyline(allPoints, {
         color: '#ff1744', weight: 4, opacity: 0.7, dashArray: '10, 10'
       }).addTo(this.map);
@@ -299,18 +298,27 @@ const RoutePlanner = {
       </div>`;
     }
 
-    // Show alternate routes if available
+    // Route options (main + alternatives) — clickable to select
     if (altRoutes && altRoutes.length > 0) {
-      html += '<div style="margin-bottom:12px"><h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-code-branch" style="color:#ff9800"></i> Alternate Routes</h4>';
-      for (let a = 0; a < altRoutes.length; a++) {
-        const alt = altRoutes[a];
-        const altKm = (alt.summary.totalDistance / 1000).toFixed(0);
-        const altHours = (alt.summary.totalTime / 3600);
-        const diff = altKm - totalKm;
-        html += `<div style="display:flex;gap:12px;align-items:center;padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);margin-bottom:4px;font-size:0.8rem;border-left:3px solid #ff9800">
-          <span style="font-weight:600">${altKm}km</span>
-          <span>${Utils.formatDuration(altHours)}</span>
-          <span style="color:var(--text-muted)">${diff > 0 ? '+' : ''}${diff}km</span>
+      // Store all routes so user can switch
+      this._allRoutes = [route, ...altRoutes];
+
+      html += '<div style="margin-bottom:12px"><h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-code-branch"></i> Route Options</h4>';
+
+      for (let a = 0; a < this._allRoutes.length; a++) {
+        const r = this._allRoutes[a];
+        const rKm = (r.summary.totalDistance / 1000).toFixed(0);
+        const rHours = (r.summary.totalTime / 3600);
+        const diff = rKm - totalKm;
+        const isSelected = a === 0;
+        const color = a === 0 ? '#ff1744' : '#ff9800';
+        const label = a === 0 ? 'Fastest' : a === 1 ? 'Alternative' : `Option ${a + 1}`;
+
+        html += `<div class="route-option" data-route-idx="${a}" onclick="RoutePlanner.selectRoute(${a})"
+          style="display:flex;gap:12px;align-items:center;padding:8px;background:${isSelected ? 'rgba(255,23,68,0.08)' : 'var(--bg-tertiary)'};border-radius:var(--radius);margin-bottom:4px;font-size:0.8rem;border-left:3px solid ${color};cursor:pointer;transition:background 0.2s">
+          <span style="font-weight:600;min-width:50px">${rKm}km</span>
+          <span>${Utils.formatDuration(rHours)}</span>
+          <span style="color:var(--text-muted);font-size:0.75em">${a === 0 ? label : `${label} ${diff > 0 ? '+' : ''}${diff}km`}</span>
         </div>`;
       }
       html += '</div>';
@@ -420,6 +428,57 @@ const RoutePlanner = {
   },
 
   // Find unpaved roads along the route corridor via Overpass
+  _allRoutes: null,
+
+  // Select an alternative route by index
+  selectRoute(idx) {
+    if (!this._allRoutes || !this._allRoutes[idx] || !this.routeControl) return;
+
+    // Tell the routing control to select this route
+    this.routeControl.fire('routeselected', { route: this._allRoutes[idx] });
+
+    // Highlight the selected option in the UI
+    document.querySelectorAll('.route-option').forEach((el, i) => {
+      const isSelected = i === idx;
+      el.style.background = isSelected ? 'rgba(255,23,68,0.08)' : 'var(--bg-tertiary)';
+      el.style.borderLeftColor = isSelected ? '#ff1744' : '#ff9800';
+    });
+
+    // Zoom to the selected route
+    const route = this._allRoutes[idx];
+    if (route.coordinates) {
+      this.map.fitBounds(L.latLngBounds(route.coordinates), { padding: [50, 50] });
+    }
+  },
+
+  // Inject gravel waypoints into base points, sorted by distance from start
+  _injectGravel(basePoints, gravelWPs) {
+    const start = basePoints[0];
+    const end = basePoints[basePoints.length - 1];
+    const userWPs = basePoints.slice(1, -1);
+    const gravelLatLngs = gravelWPs.map(w => L.latLng(w.lat, w.lon));
+    const middle = [...userWPs, ...gravelLatLngs];
+    middle.sort((a, b) => start.distanceTo(a) - start.distanceTo(b));
+    return [start, ...middle, end];
+  },
+
+  // Instantly rebuild route with/without gravel from cached data
+  _rebuildRoute() {
+    if (!this._basePoints) return;
+    const gravelBias = document.getElementById('gravel-bias')?.checked;
+    let allPoints = [...this._basePoints];
+
+    if (gravelBias && this._cachedGravelWPs && this._cachedGravelWPs.length > 0) {
+      allPoints = this._injectGravel(this._basePoints, this._cachedGravelWPs);
+      console.log(`Gravel: rebuilding with ${this._cachedGravelWPs.length} gravel waypoints`);
+    } else {
+      console.log('Gravel: rebuilding without gravel');
+    }
+
+    this.clearRouteDisplay();
+    this._executeRoute(allPoints);
+  },
+
   // Find gravel/unpaved roads along the route using small spot queries (fast)
   async findGravelWaypoints(start, end, allPoints) {
     const routeLen = Utils.distance(start.lat, start.lng, end.lat, end.lng);
