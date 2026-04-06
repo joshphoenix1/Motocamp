@@ -782,44 +782,56 @@
   function fetchPrecipGrid() {
     if (!currentLat || !currentLng) return;
 
+    const lat = currentLat;
+    const lng = currentLng;
     const lats = [], lons = [];
     const half = Math.floor(PRECIP_GRID_SIZE / 2);
+    // Adjust longitude spacing for latitude (degrees get narrower toward poles)
+    const lngSpacing = PRECIP_SPACING_DEG / Math.cos(lat * Math.PI / 180);
     for (let i = -half; i <= half; i++) {
       for (let j = -half; j <= half; j++) {
-        lats.push((currentLat + i * PRECIP_SPACING_DEG).toFixed(2));
-        lons.push((currentLng + j * PRECIP_SPACING_DEG / Math.cos(currentLat * Math.PI / 180)).toFixed(2));
+        lats.push((lat + i * PRECIP_SPACING_DEG).toFixed(2));
+        lons.push((lng + j * lngSpacing).toFixed(2));
       }
     }
 
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats.join(',')}&longitude=${lons.join(',')}` +
       '&hourly=precipitation&forecast_hours=3&forecast_days=1';
 
+    console.log(`Radar: fetching precip grid at ${lat.toFixed(3)}, ${lng.toFixed(3)}`);
+
     fetch(url)
       .then(r => r.json())
       .then(data => {
         const points = Array.isArray(data) ? data : [data];
+        if (points.length !== PRECIP_GRID_SIZE * PRECIP_GRID_SIZE) {
+          console.warn('Radar: unexpected response count', points.length);
+        }
         const grid = [];
+        let maxPrecip = 0;
         for (let i = 0; i < PRECIP_GRID_SIZE; i++) {
           grid[i] = [];
           for (let j = 0; j < PRECIP_GRID_SIZE; j++) {
             const idx = i * PRECIP_GRID_SIZE + j;
             const hourly = points[idx]?.hourly?.precipitation || [0, 0, 0];
-            // Max precipitation over next 3 hours
-            grid[i][j] = Math.max(...hourly);
+            const val = Math.max(...hourly);
+            grid[i][j] = val;
+            if (val > maxPrecip) maxPrecip = val;
           }
         }
         precipGrid = {
           lats: lats.map(Number),
           lons: lons.map(Number),
           grid: grid,
-          centerLat: currentLat,
-          centerLng: currentLng,
+          centerLat: lat,
+          centerLng: lng,
           time: Date.now()
         };
         lastRadarFetch = Date.now();
+        console.log(`Radar: grid loaded, max precip ${maxPrecip.toFixed(1)}mm`);
         drawRadar();
       })
-      .catch(() => {});
+      .catch(err => { console.warn('Radar fetch failed:', err); });
   }
 
   function updateRadar() {
