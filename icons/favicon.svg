@@ -1,13 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00c853"/>
-      <stop offset="100%" style="stop-color:#009624"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <!-- Motorcycle icon (simplified from Font Awesome fa-motorcycle) -->
-  <g transform="translate(56, 120) scale(0.78)" fill="#ffffff">
-    <path d="M400 192h-44.4c-7.5-14.6-19.1-26.3-33.6-33.6L368 112h-48l-34.4 34.4c-5.2-.9-10.5-1.4-16-1.4H208c-5.5 0-10.8.5-16 1.4L158 112h-48l46 46.4c-14.5 7.3-26.1 19-33.6 33.6H80c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80c0-5.5-.6-10.8-1.6-16h163.2c-1 5.2-1.6 10.5-1.6 16 0 44.2 35.8 80 80 80s80-35.8 80-80-35.8-80-80-80zm-320 112c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128-48H152.8c7.6-14.8 19.5-26.7 34.2-34.2l.1-.1c9.7-5 20.6-7.7 32-7.7h61.8c11.4 0 22.3 2.7 32 7.7l.1.1c14.7 7.5 26.6 19.4 34.2 34.2H208zm192 48c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#0a0f1a"/>
+  <path d="M62,18 L34,64 L90,64 Z" fill="#0d2818" stroke="#00c853" stroke-width="3" stroke-linejoin="round" opacity="0.5"/>
+  <path d="M38,22 L8,68 L68,68 Z" fill="#0f1f14" stroke="#00c853" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M28,38 L33,30 L35,28 L38,22 L41,28 L43,30 L48,38 L45,36 L42,38 L40,35 L37,38 L34,35 L31,38 Z" fill="#e0e8ee" opacity="0.7"/>
+  <path d="M52,34 L56,26 L58,22 L62,18 L66,22 L68,26 L72,34 L69,32 L66,34 L64,31 L61,34 L58,31 L55,34 Z" fill="#e0e8ee" opacity="0.5"/>
+  <path d="M10,84 Q34,72 50,78 Q66,84 92,66" fill="none" stroke="#ffab40" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="92" cy="66" r="6" fill="#ff5252"/>
+  <circle cx="92" cy="66" r="2.5" fill="#fff" opacity="0.9"/>
 </svg>
