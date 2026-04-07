@@ -1,20 +1,23 @@
 /* ===== Service Worker — Offline Support ===== */
-const CACHE_NAME = 'motorcamp-v1';
+const CACHE_NAME = 'motorcamp-v2';
 
 // Core app shell — always cache these
 const APP_SHELL = [
   '/',
   '/index.html',
   '/css/style.css',
+  '/js/auth.js',
+  '/js/health.js',
   '/js/utils.js',
   '/js/data-loader.js',
-  '/js/overpass-loader.js',
   '/js/weather.js',
+  '/js/surface-overlay.js',
+  '/js/overpass-loader.js',
   '/js/layers.js',
   '/js/gravel-roads.js',
   '/js/route.js',
   '/js/dashboard.js',
-  '/js/health.js',
+  '/js/offline-maps.js',
   '/js/app.js',
   '/manifest.json',
 ];
@@ -81,17 +84,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin: cache-first for app shell
+  // Same-origin: stale-while-revalidate
+  // Serve from cache immediately for speed, but always fetch fresh in background
+  // so the next load picks up any code changes
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(resp => {
-        if (resp.ok) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return resp;
-      });
-    })
+    caches.open(CACHE_NAME).then(cache =>
+      cache.match(event.request).then(cached => {
+        const networkFetch = fetch(event.request).then(resp => {
+          if (resp.ok) cache.put(event.request, resp.clone());
+          return resp;
+        });
+        return cached || networkFetch;
+      })
+    )
   );
 });
