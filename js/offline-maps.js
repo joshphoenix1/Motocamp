@@ -4,7 +4,7 @@ const OfflineMaps = {
   TILE_URL: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   SUBDOMAINS: ['a', 'b', 'c'],
   MIN_ZOOM: 6,
-  MAX_ZOOM: 13, // street-level detail without being excessive
+  MAX_ZOOM: 10, // road-level detail; zoom 13 would be 40x larger than estimates
   _downloading: false,
   _progress: { done: 0, total: 0, region: '' },
   _aborted: false,
@@ -12,32 +12,32 @@ const OfflineMaps = {
   // Pre-defined regions with bbox [south, west, north, east]
   regions: {
     // USA
-    'us-west':        { name: 'US West',              bbox: [31, -125, 49, -104],   est: '~180 MB' },
-    'us-southwest':   { name: 'US Southwest',          bbox: [31, -118, 40, -104],   est: '~120 MB' },
-    'us-rockies':     { name: 'US Rockies',            bbox: [37, -114, 49, -104],   est: '~100 MB' },
-    'us-southeast':   { name: 'US Southeast',          bbox: [24, -92, 37, -75],     est: '~150 MB' },
-    'us-northeast':   { name: 'US Northeast',          bbox: [37, -82, 47, -67],     est: '~80 MB' },
+    'us-west':        { name: 'US West',              bbox: [31, -125, 49, -104],   est: '~85 MB' },
+    'us-southwest':   { name: 'US Southwest',          bbox: [31, -118, 40, -104],   est: '~30 MB' },
+    'us-rockies':     { name: 'US Rockies',            bbox: [37, -114, 49, -104],   est: '~30 MB' },
+    'us-southeast':   { name: 'US Southeast',          bbox: [24, -92, 37, -75],     est: '~60 MB' },
+    'us-northeast':   { name: 'US Northeast',          bbox: [37, -82, 47, -67],     est: '~25 MB' },
     // Europe
-    'eu-alps':        { name: 'Alps (AT/CH/FR/IT)',    bbox: [44, 5, 48.5, 17],      est: '~100 MB' },
-    'eu-scandinavia': { name: 'Scandinavia',           bbox: [55, 4, 71, 32],        est: '~150 MB' },
-    'eu-iberia':      { name: 'Spain & Portugal',      bbox: [36, -10, 44, 4],       est: '~90 MB' },
-    'eu-balkans':     { name: 'Balkans & Greece',      bbox: [35, 13, 47, 30],       est: '~100 MB' },
-    'uk-ireland':     { name: 'UK & Ireland',          bbox: [50, -11, 59, 2],       est: '~60 MB' },
+    'eu-alps':        { name: 'Alps (AT/CH/FR/IT)',    bbox: [44, 5, 48.5, 17],      est: '~15 MB' },
+    'eu-scandinavia': { name: 'Scandinavia',           bbox: [55, 4, 71, 32],        est: '~165 MB' },
+    'eu-iberia':      { name: 'Spain & Portugal',      bbox: [36, -10, 44, 4],       est: '~30 MB' },
+    'eu-balkans':     { name: 'Balkans & Greece',      bbox: [35, 13, 47, 30],       est: '~40 MB' },
+    'uk-ireland':     { name: 'UK & Ireland',          bbox: [50, -11, 59, 2],       est: '~25 MB' },
     // Africa
-    'af-southern':    { name: 'Southern Africa',       bbox: [-35, 15, -15, 35],     est: '~120 MB' },
-    'af-east':        { name: 'East Africa',           bbox: [-12, 28, 5, 42],       est: '~100 MB' },
-    'af-morocco':     { name: 'Morocco',               bbox: [27, -13, 36, -1],      est: '~50 MB' },
+    'af-southern':    { name: 'Southern Africa',       bbox: [-35, 15, -15, 35],     est: '~75 MB' },
+    'af-east':        { name: 'East Africa',           bbox: [-12, 28, 5, 42],       est: '~35 MB' },
+    'af-morocco':     { name: 'Morocco',               bbox: [27, -13, 36, -1],      est: '~20 MB' },
     // Oceania
     'nz':             { name: 'New Zealand',           bbox: [-47, 166, -34, 179],   est: '~40 MB' },
-    'au-outback':     { name: 'Australia (Outback)',   bbox: [-35, 125, -20, 145],   est: '~80 MB' },
-    'au-east':        { name: 'Australia (East Coast)', bbox: [-38, 144, -16, 154],  est: '~90 MB' },
+    'au-outback':     { name: 'Australia (Outback)',   bbox: [-35, 125, -20, 145],   est: '~40 MB' },
+    'au-east':        { name: 'Australia (East Coast)', bbox: [-38, 144, -16, 154],  est: '~25 MB' },
     // Americas
-    'patagonia':      { name: 'Patagonia',             bbox: [-55, -76, -38, -63],   est: '~60 MB' },
-    'baja':           { name: 'Baja California',       bbox: [23, -117, 33, -109],   est: '~40 MB' },
-    'central-am':     { name: 'Central America',       bbox: [7, -92, 18, -77],      est: '~70 MB' },
+    'patagonia':      { name: 'Patagonia',             bbox: [-55, -76, -38, -63],   est: '~55 MB' },
+    'baja':           { name: 'Baja California',       bbox: [23, -117, 33, -109],   est: '~15 MB' },
+    'central-am':     { name: 'Central America',       bbox: [7, -92, 18, -77],      est: '~30 MB' },
     // Asia
-    'asia-central':   { name: 'Central Asia',          bbox: [35, 50, 55, 80],       est: '~120 MB' },
-    'asia-se':        { name: 'SE Asia',               bbox: [-10, 95, 24, 120],     est: '~150 MB' },
+    'asia-central':   { name: 'Central Asia',          bbox: [35, 50, 55, 80],       est: '~60 MB' },
+    'asia-se':        { name: 'SE Asia',               bbox: [-10, 95, 24, 120],     est: '~140 MB' },
   },
 
   // Count tiles for a bbox at given zoom range
