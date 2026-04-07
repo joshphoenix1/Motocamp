@@ -324,8 +324,12 @@ const RoutePlanner = {
       html += '</div>';
     }
 
-    // === Route Warnings ===
-    const warnings = await this.generateRouteWarnings(points, routeCoords);
+    // === Fetch weather for all points in parallel (shared by warnings + summary) ===
+    const weatherPromises = points.map(p => Weather.fetchPointWeather(p.lat, p.lng).catch(() => null));
+    const weatherData = await Promise.all(weatherPromises);
+
+    // === Route Warnings (uses pre-fetched weather) ===
+    const warnings = await this.generateRouteWarnings(points, routeCoords, weatherData);
     if (warnings.length > 0) {
       html += `<div style="margin-bottom:12px">`;
       html += `<h4 style="font-size:0.78rem;color:#ff5252;margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Warnings</h4>`;
@@ -348,8 +352,8 @@ const RoutePlanner = {
       const isEnd = i === points.length - 1;
       const label = isStart ? 'Start' : isEnd ? 'Destination' : `Stop ${i}`;
 
-      // Get weather
-      const wxData = await Weather.fetchPointWeather(p.lat, p.lng);
+      // Use pre-fetched weather
+      const wxData = weatherData[i];
       const dayIdx = Math.min(i, 6); // Spread across forecast days
 
       // Find nearby services
@@ -571,14 +575,13 @@ const RoutePlanner = {
     return picked;
   },
 
-  async generateRouteWarnings(points, routeCoords) {
+  async generateRouteWarnings(points, routeCoords, weatherData) {
     const warnings = [];
 
     // 1. Check weather at each waypoint for serious conditions
     for (let i = 0; i < points.length; i++) {
-      const p = points[i];
       try {
-        const wx = await Weather.fetchPointWeather(p.lat, p.lng);
+        const wx = weatherData ? weatherData[i] : await Weather.fetchPointWeather(points[i].lat, points[i].lng);
         if (!wx?.daily) continue;
         const dayIdx = Math.min(i, 6);
         const code = wx.daily.weather_code[dayIdx];

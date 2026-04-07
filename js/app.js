@@ -4,7 +4,7 @@
 
   // ===== Initialize Map =====
   // Home position: updated by geolocation, used by reset button
-  let homePosition = { center: [20, 0], zoom: 3 };
+  let homePosition = { center: [-41.5, 174], zoom: 6 };
 
   const map = L.map('map', {
     center: homePosition.center,
