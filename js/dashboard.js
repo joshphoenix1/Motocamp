@@ -54,6 +54,12 @@
   let peakLeanRight = 0;
   let leanCalibration = 0;    // offset for non-vertical mounts
 
+  // GPS-derived lean (fixes accelerometer underreading during cornering)
+  let prevGpsHeading = null;
+  let prevGpsHeadingTime = 0;
+  let gpsLeanAngle = 0;       // degrees, from GPS speed + yaw rate
+  let accelLeanAngle = 0;     // degrees, from accelerometer only
+
   // Lean peak reset
   let peakResetInterval = null;
 
@@ -173,6 +179,10 @@
         peakLeanRight = 0;
         leanCalibSamples = [];
         leanCalibration = 0;
+        prevGpsHeading = null;
+        prevGpsHeadingTime = 0;
+        gpsLeanAngle = 0;
+        accelLeanAngle = 0;
         lastElevUpdateDist = 0;
         updateDisplay(0, null, null);
       }
@@ -382,8 +392,32 @@
     // GPS heading is reliable when moving (>5 km/h)
     lastGpsSpeed = speedKmh;
     if (heading !== null && speedKmh > 5) {
+      // Compute GPS-derived lean angle from yaw rate + speed.
+      // Physics: in a balanced turn, tan(lean) = v * yawRate / g
+      // This is immune to centripetal acceleration (unlike the accelerometer).
+      const now = Date.now();
+      if (prevGpsHeading !== null && prevGpsHeadingTime > 0) {
+        const dt = (now - prevGpsHeadingTime) / 1000; // seconds
+        if (dt > 0.05 && dt < 3) { // valid interval (not too fast, not stale)
+          let dHeading = heading - prevGpsHeading;
+          // Normalize to -180..+180
+          if (dHeading > 180) dHeading -= 360;
+          if (dHeading < -180) dHeading += 360;
+          const yawRateDeg = dHeading / dt;     // deg/s
+          const yawRateRad = yawRateDeg * Math.PI / 180;
+          const speedMs = speedKmh / 3.6;
+          // lean = atan(v * yawRate / g), positive = right turn = right lean
+          const gpsRawLean = Math.atan2(speedMs * yawRateRad, 9.81) * (180 / Math.PI);
+          // Smooth it (GPS updates at ~1Hz, so use heavier smoothing)
+          const GPS_LEAN_ALPHA = 0.4;
+          gpsLeanAngle = gpsLeanAngle + GPS_LEAN_ALPHA * (gpsRawLean - gpsLeanAngle);
+        }
+      }
+      prevGpsHeading = heading;
+      prevGpsHeadingTime = now;
+
       gpsHeading = heading;
-      lastGpsHeadingTime = Date.now();
+      lastGpsHeadingTime = now;
     }
 
     // When moving: use GPS heading (accurate).
@@ -696,8 +730,17 @@
       leanCalibration += calibrated * LEAN_RECALIB_RATE;
     }
 
-    // Double EMA smoothing (two passes for less jitter, slightly more lag)
-    currentLean = currentLean + LEAN_EMA_ALPHA * (calibrated - currentLean);
+    // Smooth the accelerometer reading
+    accelLeanAngle = accelLeanAngle + LEAN_EMA_ALPHA * (calibrated - accelLeanAngle);
+
+    // Blend accelerometer and GPS lean based on speed.
+    // At low speed (<15 km/h): pure accelerometer (GPS yaw rate is noisy).
+    // At high speed (>30 km/h): pure GPS lean (accelerometer is fooled by centripetal force).
+    // In between: linear blend.
+    const BLEND_LOW = 15;   // km/h — below this, 100% accelerometer
+    const BLEND_HIGH = 30;  // km/h — above this, 100% GPS
+    const blendGps = Math.max(0, Math.min(1, (lastGpsSpeed - BLEND_LOW) / (BLEND_HIGH - BLEND_LOW)));
+    currentLean = accelLeanAngle * (1 - blendGps) + gpsLeanAngle * blendGps;
 
     // Deadband: suppress display jitter below 3°
     const displayLean = Math.abs(currentLean) < 3 ? 0 : currentLean;
