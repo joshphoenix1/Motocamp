@@ -37,6 +37,10 @@
   let pressureHistory = []; // [{pressure, time}] ring buffer
   let pressureTrend = null; // slope in hPa/hr
 
+  // Temperature trend
+  let tempHistory = []; // [{temp, time}]
+  let tempTrend = null; // °C/hr
+
   // Average speed
   let tripStartTime = null;
 
@@ -173,6 +177,8 @@
         currentWindGust = null;
         pressureHistory = [];
         pressureTrend = null;
+        tempHistory = [];
+        tempTrend = null;
         tripStartTime = null;
         currentLean = 0;
         peakLeanLeft = 0;
@@ -233,8 +239,10 @@
       // Load saved target and wire up UI
       loadCompassTarget();
       setupCompassUI();
+      setupModeToggle();
       renderCompassTarget();
       updateCompassArrow();
+      navModeManual = null; // reset manual override on dashboard open
 
       // Watch for phone orientation flips (portrait ↔ landscape)
       screenOrientationListener = onScreenOrientationChange;
@@ -281,6 +289,7 @@
       stopLeanTracking();
       if (peakResetInterval) { clearInterval(peakResetInterval); peakResetInterval = null; }
       stopRadar();
+      hideNavMode();
 
       releaseWakeLock();
 
@@ -442,6 +451,7 @@
     updateDisplay(speedKmh, alt, hdg);
     updateStatsStrip();
     updateCompassArrow();
+    updateNextTurn();
     updateRadar();
 
     // Update elevation profile on first fix and every 500m
@@ -464,26 +474,26 @@
 
   function fetchWeather(lat, lon) {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      '&current_weather=true' +
-      '&current=surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m';
+      '&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        if (data.current_weather) {
-          currentTemp = Math.round(data.current_weather.temperature);
-        }
         if (data.current) {
-          // Wind
+          currentTemp = Math.round(data.current.temperature_2m);
           currentWindSpeed = Math.round(data.current.wind_speed_10m);
           currentWindDir = data.current.wind_direction_10m;
           currentWindGust = data.current.wind_gusts_10m;
           updateWindDisplay();
 
-          // Pressure
+          // Temperature trend
+          tempHistory.push({ temp: data.current.temperature_2m, time: Date.now() });
+          if (tempHistory.length > 6) tempHistory.shift();
+          computeTempTrend();
+
           const pressure = data.current.surface_pressure;
           if (pressure != null) {
             pressureHistory.push({ pressure, time: Date.now() });
-            if (pressureHistory.length > 6) pressureHistory.shift(); // keep ~30 min window
+            if (pressureHistory.length > 6) pressureHistory.shift();
             computePressureTrend();
           }
         }
@@ -503,7 +513,14 @@
   }
 
   function updatePressureDisplay() {
-    const arrow = document.getElementById('dash-pressure-arrow');
+    const valEl = document.getElementById('dash-baro-value');
+    const arrow = document.getElementById('dash-baro-arrow');
+
+    // Show current pressure value
+    if (valEl && pressureHistory.length > 0) {
+      valEl.textContent = Math.round(pressureHistory[pressureHistory.length - 1].pressure);
+    }
+
     if (!arrow) return;
 
     if (pressureTrend === null) {
@@ -516,15 +533,15 @@
     arrow.style.opacity = '1';
     let rotation, color;
     if (pressureTrend > 1) {
-      rotation = 0; color = '#00c853';          // rising fast ↑
+      rotation = 0; color = '#00c853';              // rising fast ↑
     } else if (pressureTrend > 0.3) {
-      rotation = 45; color = '#00c853';          // rising ↗
+      rotation = 45; color = '#00c853';              // rising ↗
     } else if (pressureTrend > -0.3) {
-      rotation = 90; color = 'var(--text-secondary)';  // stable →
+      rotation = 90; color = 'var(--text-muted)';    // stable →
     } else if (pressureTrend > -1) {
-      rotation = 135; color = '#ffab40';         // falling ↘
+      rotation = 135; color = '#ff5252';             // falling ↘
     } else {
-      rotation = 180; color = '#ff5252';         // falling fast ↓
+      rotation = 180; color = '#ff5252';             // falling fast ↓
     }
     arrow.style.transform = `rotate(${rotation}deg)`;
     arrow.querySelector('polygon').setAttribute('fill', color);
@@ -536,20 +553,15 @@
     if (valEl) valEl.textContent = currentWindSpeed !== null ? currentWindSpeed : '--';
 
     if (arrowEl && currentWindDir !== null && currentHeading !== null) {
-      // Relative wind direction: rotate so "up" means headwind
-      // Wind direction is where wind comes FROM (meteorological convention)
-      // Relative = windDir - heading. Arrow points where wind comes FROM relative to rider.
       const relativeDir = ((currentWindDir - currentHeading) + 360) % 360;
       arrowEl.style.transform = `rotate(${relativeDir}deg)`;
 
-      // Color by crosswind component
       const crossAngle = Math.abs(Math.sin(relativeDir * Math.PI / 180));
       const crossSpeed = (currentWindSpeed || 0) * crossAngle;
       let color;
-      if (crossSpeed > 40) color = '#ff5252';       // danger
-      else if (crossSpeed > 25) color = '#ffab40';   // warning
-      else if (crossSpeed > 15) color = 'var(--text-secondary)';
-      else color = 'var(--text-muted)';
+      if (crossSpeed > 40) color = '#ff5252';
+      else if (crossSpeed > 25) color = '#ffab40';
+      else color = '#00c853';
       arrowEl.querySelector('polygon').setAttribute('fill', color);
     } else if (arrowEl) {
       arrowEl.style.transform = 'rotate(0deg)';
@@ -983,11 +995,22 @@
 
     const cx = size / 2, cy = size / 2;
     const radius = size / 2;
+    const cornerR = 10; // matches CSS border-radius
 
-    // Clip to circle
+    // Clip to rounded rectangle (with fallback for older browsers)
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+    if (ctx.roundRect) {
+      ctx.roundRect(0.5, 0.5, size - 1, size - 1, cornerR);
+    } else {
+      const x = 0.5, y = 0.5, w = size - 1, h = size - 1, r = cornerR;
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+      ctx.closePath();
+    }
     ctx.clip();
 
     // Dark background
@@ -1180,6 +1203,284 @@
       cancelAnimationFrame(radarAnimFrame);
       radarAnimFrame = null;
     }
+  }
+
+  // ===== Route Navigation: Minimap + Next Turn =====
+
+  let minimap = null;          // Leaflet map instance
+  let minimapRoutePast = null; // polyline: travelled portion (dim)
+  let minimapRouteAhead = null;// polyline: upcoming portion (bright)
+  let minimapRider = null;     // rider marker on minimap
+  let navModeActive = false;   // is nav mode currently showing
+  let navModeManual = null;    // null = auto, 'compass' | 'map' = user override
+  let routeNearestIdx = 0;     // rider's snapped index on route coords
+
+  function showNavMode() {
+    if (navModeActive) return;
+    navModeActive = true;
+    const compass = document.getElementById('dash-compass-zone');
+    const nav = document.getElementById('dash-nav-mode');
+    if (compass) compass.classList.add('hidden');
+    if (nav) nav.classList.remove('hidden');
+    initMinimap();
+  }
+
+  function hideNavMode() {
+    if (!navModeActive) return;
+    navModeActive = false;
+    const compass = document.getElementById('dash-compass-zone');
+    const nav = document.getElementById('dash-nav-mode');
+    if (compass) compass.classList.remove('hidden');
+    if (nav) nav.classList.add('hidden');
+    destroyMinimap();
+  }
+
+  // Show/hide the "switch to map" button (only when a route exists)
+  function updateModeToggleVisibility(hasRoute) {
+    const switchToMap = document.getElementById('dash-switch-to-map');
+    if (switchToMap) switchToMap.classList.toggle('hidden', !hasRoute);
+  }
+
+  function setupModeToggle() {
+    const toMap = document.getElementById('dash-switch-to-map');
+    const toCompass = document.getElementById('dash-switch-to-compass');
+    if (toMap && !toMap._wired) {
+      toMap.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navModeManual = 'map';
+        showNavMode();
+      });
+      toMap._wired = true;
+    }
+    if (toCompass && !toCompass._wired) {
+      toCompass.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navModeManual = 'compass';
+        hideNavMode();
+      });
+      toCompass._wired = true;
+    }
+  }
+
+  function initMinimap() {
+    if (minimap) return;
+    const container = document.getElementById('dash-minimap');
+    if (!container || typeof L === 'undefined') return;
+
+    minimap = L.map(container, {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      touchZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false
+    }).setView([0, 0], 14);
+
+    // Dark tile layer for dashboard aesthetic
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(minimap);
+
+    // Route lines — split into past (dim) and ahead (bright), updated in updateMinimap
+    minimapRoutePast = L.polyline([], {
+      color: '#ff1744', weight: 2, opacity: 0.25
+    }).addTo(minimap);
+    minimapRouteAhead = L.polyline([], {
+      color: '#ff1744', weight: 3, opacity: 0.9
+    }).addTo(minimap);
+
+    // Rider marker — small pulsing dot
+    const riderIcon = L.divIcon({
+      className: 'dash-minimap-rider',
+      html: '<div class="dash-rider-dot"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+    minimapRider = L.marker([currentLat || 0, currentLng || 0], { icon: riderIcon }).addTo(minimap);
+
+    // Initial view
+    if (currentLat !== null) {
+      minimap.setView([currentLat, currentLng], 15);
+    }
+
+    // Force Leaflet to recalculate size after DOM show
+    setTimeout(() => { if (minimap) minimap.invalidateSize(); }, 100);
+  }
+
+  function destroyMinimap() {
+    minimapRoutePast = null;
+    minimapRouteAhead = null;
+    minimapRider = null;
+    if (minimap) {
+      minimap.remove();
+      minimap = null;
+    }
+  }
+
+  function updateMinimap() {
+    if (!minimap || currentLat === null || currentLng === null) return;
+
+    // Update rider position
+    if (minimapRider) minimapRider.setLatLng([currentLat, currentLng]);
+
+    // Split route into past/ahead at rider position
+    if (typeof RoutePlanner !== 'undefined' && RoutePlanner.activeCoordinates) {
+      const coords = RoutePlanner.activeCoordinates;
+      const idx = routeNearestIdx;
+
+      // Past: start → rider (dim)
+      if (minimapRoutePast) {
+        const past = [];
+        for (let i = 0; i <= idx; i++) past.push([coords[i].lat, coords[i].lng]);
+        past.push([currentLat, currentLng]);
+        minimapRoutePast.setLatLngs(past);
+      }
+
+      // Ahead: rider → end (bright)
+      if (minimapRouteAhead) {
+        const ahead = [[currentLat, currentLng]];
+        for (let i = idx; i < coords.length; i++) ahead.push([coords[i].lat, coords[i].lng]);
+        minimapRouteAhead.setLatLngs(ahead);
+      }
+    }
+
+    // Pan to rider with forward bias based on heading
+    if (currentHeading !== null) {
+      const offsetM = 200;
+      const headRad = currentHeading * Math.PI / 180;
+      const dLat = (offsetM / 111320) * Math.cos(headRad);
+      const dLng = (offsetM / (111320 * Math.cos(currentLat * Math.PI / 180))) * Math.sin(headRad);
+      minimap.panTo([currentLat + dLat, currentLng + dLng], { animate: false });
+    } else {
+      minimap.panTo([currentLat, currentLng], { animate: false });
+    }
+  }
+
+  // type ��� { icon, rotate } for turn arrows
+  const TURN_ICONS = {
+    'Left':         { icon: 'fa-arrow-left', rot: 0 },
+    'Right':        { icon: 'fa-arrow-right', rot: 0 },
+    'SlightLeft':   { icon: 'fa-arrow-up', rot: -45 },
+    'SlightRight':  { icon: 'fa-arrow-up', rot: 45 },
+    'SharpLeft':    { icon: 'fa-arrow-left', rot: 45 },
+    'SharpRight':   { icon: 'fa-arrow-right', rot: -45 },
+    'UTurn':        { icon: 'fa-arrow-rotate-left', rot: 0 },
+    'Straight':     { icon: 'fa-arrow-up', rot: 0 },
+    'Head':         { icon: 'fa-arrow-up', rot: 0 },
+    'Depart':       { icon: 'fa-play', rot: 0 },
+    'WaypointReached': { icon: 'fa-map-pin', rot: 0 },
+    'DestinationReached': { icon: 'fa-flag-checkered', rot: 0 },
+    'Roundabout':   { icon: 'fa-rotate-right', rot: 0 },
+    'EnterRoundabout': { icon: 'fa-rotate-right', rot: 0 },
+    'ExitRoundabout': { icon: 'fa-arrow-right', rot: 0 },
+    'Fork':         { icon: 'fa-code-branch', rot: 0 },
+    'Merge':        { icon: 'fa-code-branch', rot: 0 }
+  };
+
+  function formatTurnDist(meters) {
+    if (meters < 100) return `${Math.round(meters / 10) * 10}m`;
+    if (meters < 1000) return `${Math.round(meters / 50) * 50}m`;
+    return `${(meters / 1000).toFixed(1)}km`;
+  }
+
+  function updateNextTurn() {
+    // Check if RoutePlanner has active instructions
+    const hasRoute = typeof RoutePlanner !== 'undefined' &&
+      RoutePlanner.activeInstructions && RoutePlanner.activeCoordinates &&
+      RoutePlanner.activeInstructions.length > 0;
+
+    if (!hasRoute || currentLat === null || currentLng === null) {
+      updateModeToggleVisibility(false);
+      if (navModeManual !== 'compass') hideNavMode();
+      return;
+    }
+
+    updateModeToggleVisibility(true);
+
+    const instructions = RoutePlanner.activeInstructions;
+    const coords = RoutePlanner.activeCoordinates;
+    const cumDist = RoutePlanner._activeCumDist;
+
+    // Find nearest point on route
+    let minDist = Infinity, nearestIdx = 0;
+    const step = Math.max(1, Math.floor(coords.length / 500));
+    for (let i = 0; i < coords.length; i += step) {
+      const d = haversine(currentLat, currentLng, coords[i].lat, coords[i].lng);
+      if (d < minDist) { minDist = d; nearestIdx = i; }
+    }
+    // Refine around the nearest sampled point
+    const refineStart = Math.max(0, nearestIdx - step);
+    const refineEnd = Math.min(coords.length - 1, nearestIdx + step);
+    for (let i = refineStart; i <= refineEnd; i++) {
+      const d = haversine(currentLat, currentLng, coords[i].lat, coords[i].lng);
+      if (d < minDist) { minDist = d; nearestIdx = i; }
+    }
+
+    // Store for minimap route splitting
+    routeNearestIdx = nearestIdx;
+
+    // If rider is >2km from route and no manual override, fall back to compass
+    if (minDist > 2000 && navModeManual !== 'map') { hideNavMode(); return; }
+
+    // Show nav mode unless user manually chose compass
+    if (navModeManual !== 'compass') {
+      showNavMode();
+      updateMinimap();
+    } else if (minimap) {
+      // Still update minimap data if it exists (user might switch back)
+      updateMinimap();
+    }
+
+    const riderCumDist = cumDist[nearestIdx];
+
+    // Find the next instruction ahead of rider position
+    let nextInst = null;
+    for (let i = 0; i < instructions.length; i++) {
+      const inst = instructions[i];
+      if (inst.cumDist > riderCumDist - 30) {
+        if (inst.type === 'Depart' && riderCumDist > 100) continue;
+        nextInst = inst;
+        break;
+      }
+    }
+
+    const turnEl = document.getElementById('dash-next-turn');
+    if (!nextInst || (nextInst.type === 'DestinationReached' && minDist < 50)) {
+      if (turnEl) turnEl.style.visibility = 'hidden';
+      return;
+    }
+    if (turnEl) turnEl.style.visibility = '';
+
+    // Distance to next instruction
+    const distToTurn = Math.max(0, nextInst.cumDist - riderCumDist);
+
+    const iconEl = document.getElementById('dash-turn-icon');
+    const distEl = document.getElementById('dash-turn-dist');
+    const roadEl = document.getElementById('dash-turn-road');
+
+    if (iconEl) {
+      const ti = TURN_ICONS[nextInst.type] || { icon: 'fa-arrow-up', rot: 0 };
+      const rotStyle = ti.rot ? ` style="transform:rotate(${ti.rot}deg)"` : '';
+      iconEl.innerHTML = `<i class="fas ${ti.icon}"${rotStyle}></i>`;
+
+      // Color by proximity: green > 500m, yellow 100-500m, red < 100m
+      if (distToTurn < 100) {
+        iconEl.style.background = 'rgba(255, 82, 82, 0.2)';
+        iconEl.style.color = '#ff5252';
+      } else if (distToTurn < 500) {
+        iconEl.style.background = 'rgba(255, 193, 7, 0.2)';
+        iconEl.style.color = '#ffc107';
+      } else {
+        iconEl.style.background = 'rgba(0, 200, 83, 0.15)';
+        iconEl.style.color = '#00c853';
+      }
+    }
+
+    if (distEl) distEl.textContent = formatTurnDist(distToTurn);
+    if (roadEl) roadEl.textContent = nextInst.road || nextInst.text || '';
   }
 
   // ===== Elevation Profile Sparkline =====
@@ -1454,7 +1755,10 @@
   }
 
   function runGeocode(q, resultsDiv, panel) {
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6`)
+    const locBias = (currentLat !== null && currentLng !== null)
+      ? `&viewbox=${currentLng - 2},${currentLat + 2},${currentLng + 2},${currentLat - 2}&bounded=0`
+      : '';
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${locBias}&limit=6`)
       .then(r => r.json())
       .then(data => {
         resultsDiv.innerHTML = '';

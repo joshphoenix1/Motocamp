@@ -288,8 +288,13 @@
       input.value = name;
       input.dataset.lat = snapped.lat;
       input.dataset.lon = snapped.lon;
+      // Auto-fill start with current location if empty, then plan
       const startInput = document.getElementById('route-start');
-      if (startInput.dataset.lat) document.getElementById('plan-route').click();
+      if (!startInput.dataset.lat) {
+        RoutePlanner._setStartToCurrentLocation(true);
+      } else {
+        document.getElementById('plan-route').click();
+      }
     }
 
     else if (action === 'add-waypoint') {
@@ -439,6 +444,37 @@
     // Open sidebar on mobile
     if (window.innerWidth <= 768) {
       document.getElementById('sidebar').classList.add('open');
+    }
+  };
+
+  // ===== Directions To (from info panel / popup) =====
+  RoutePlanner.directionsTo = function (lat, lon, name) {
+    // Switch to route tab
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector('[data-tab="route"]').classList.add('active');
+    document.getElementById('tab-route').classList.add('active');
+
+    // Close info panel
+    document.getElementById('info-panel').classList.add('hidden');
+
+    // Open sidebar on mobile
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar').classList.add('open');
+    }
+
+    // Set destination
+    const endInput = document.getElementById('route-end');
+    endInput.value = name;
+    endInput.dataset.lat = lat;
+    endInput.dataset.lon = lon;
+
+    // Auto-fill start with current location and plan
+    const startInput = document.getElementById('route-start');
+    if (!startInput.dataset.lat) {
+      RoutePlanner._setStartToCurrentLocation(true);
+    } else {
+      document.getElementById('plan-route').click();
     }
   };
 

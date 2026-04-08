@@ -1,5 +1,10 @@
 /* ===== Service Worker — Offline Support ===== */
-const CACHE_NAME = 'motorcamp-v2';
+const CACHE_NAME = 'motorcamp-v10';
+const TILES_CACHE = 'motorcamp-tiles';
+const CDN_CACHE = 'motorcamp-cdn';
+
+// Caches to preserve across version bumps
+const PERSISTENT_CACHES = [TILES_CACHE, CDN_CACHE];
 
 // Core app shell — always cache these
 const APP_SHELL = [
@@ -33,69 +38,102 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old app caches but keep tiles + CDN
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME && !PERSISTENT_CACHES.includes(k))
+          .map(k => { console.log('[SW] Deleting old cache:', k); return caches.delete(k); })
+      )
     )
   );
   self.clients.claim();
 });
 
-// Fetch: cache-first for app shell & static assets, network-first for API calls
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+// Hostname patterns for map tile servers
+function isTileRequest(url) {
+  const host = url.hostname;
+  return host.includes('tile.openstreetmap') ||
+    host.includes('opentopomap') ||
+    host.includes('arcgisonline') ||
+    host.includes('basemaps.cartocdn') ||
+    host.includes('tiles.') ||
+    (url.pathname.match(/\/\d+\/\d+\/\d+/) !== null); // z/x/y pattern
+}
 
-  // Skip non-GET and cross-origin API requests that shouldn't be cached
+// CDN libraries (Leaflet, Font Awesome, Google Fonts, Supabase, etc.)
+function isCdnLibrary(url) {
+  const host = url.hostname;
+  return host.includes('unpkg.com') ||
+    host.includes('cdnjs.cloudflare.com') ||
+    host.includes('fonts.googleapis.com') ||
+    host.includes('fonts.gstatic.com');
+}
+
+// Fetch handler
+self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // Network-first for API calls (weather, overpass, geocoding, routing)
-  if (url.hostname !== location.hostname) {
-    // For tile servers, use cache-first with network fallback (good for offline maps)
-    if (url.pathname.includes('/tile/') || url.hostname.includes('tile.openstreetmap') ||
-        url.hostname.includes('opentopomap') || url.hostname.includes('arcgisonline')) {
-      event.respondWith(
-        caches.open('motorcamp-tiles').then(cache =>
-          cache.match(event.request).then(cached => {
-            if (cached) return cached;
-            return fetch(event.request).then(resp => {
-              if (resp.ok) cache.put(event.request, resp.clone());
-              return resp;
-            }).catch(() => cached); // offline fallback
-          })
-        )
-      );
-      return;
-    }
+  const url = new URL(event.request.url);
 
-    // Other cross-origin (APIs): network-first, cache fallback
+  // === Same-origin: network-first, cache fallback (ensures fresh code) ===
+  if (url.hostname === location.hostname) {
     event.respondWith(
-      fetch(event.request)
-        .then(resp => {
-          if (resp.ok) {
-            const clone = resp.clone();
-            caches.open('motorcamp-api').then(cache => cache.put(event.request, clone));
-          }
-          return resp;
-        })
-        .catch(() => caches.match(event.request))
+      fetch(event.request).then(resp => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Same-origin: stale-while-revalidate
-  // Serve from cache immediately for speed, but always fetch fresh in background
-  // so the next load picks up any code changes
+  // === Map tiles: cache-first, fetch on miss ===
+  if (isTileRequest(url)) {
+    event.respondWith(
+      caches.open(TILES_CACHE).then(cache =>
+        cache.match(event.request).then(cached => {
+          if (cached) return cached;
+          return fetch(event.request).then(resp => {
+            if (resp.ok) cache.put(event.request, resp.clone());
+            return resp;
+          }).catch(() => cached);
+        })
+      )
+    );
+    return;
+  }
+
+  // === CDN libraries: cache-first (they're versioned/immutable) ===
+  if (isCdnLibrary(url)) {
+    event.respondWith(
+      caches.open(CDN_CACHE).then(cache =>
+        cache.match(event.request).then(cached => {
+          if (cached) return cached;
+          return fetch(event.request).then(resp => {
+            if (resp.ok) cache.put(event.request, resp.clone());
+            return resp;
+          }).catch(() => cached);
+        })
+      )
+    );
+    return;
+  }
+
+  // === APIs (weather, geocoding, routing): network-first, cache fallback ===
   event.respondWith(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.match(event.request).then(cached => {
-        const networkFetch = fetch(event.request).then(resp => {
-          if (resp.ok) cache.put(event.request, resp.clone());
-          return resp;
-        });
-        return cached || networkFetch;
+    fetch(event.request)
+      .then(resp => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open('motorcamp-api').then(cache => cache.put(event.request, clone));
+        }
+        return resp;
       })
-    )
+      .catch(() => caches.match(event.request))
   );
 });

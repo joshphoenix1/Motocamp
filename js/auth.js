@@ -6,41 +6,120 @@ const Auth = {
   _client: null,
   _user: null,
 
-  // Initialize Supabase client
+  // Guest credentials
+  GUEST_USER: 'guest',
+  GUEST_PASS: 'guest123',
+
+  // Initialize auth — shows login gate, checks for existing session
   init() {
-    if (this.SUPABASE_URL.includes('YOUR_PROJECT')) {
-      console.log('[Auth] Supabase not configured — running in local-only mode');
+    this._setupLoginScreen();
+
+    // Check for remembered guest session
+    if (localStorage.getItem('motorcamp-auth') === 'guest') {
+      this._user = { email: 'guest', isGuest: true };
+      this._dismissLogin();
       this._renderAuthUI();
       return;
     }
 
-    if (typeof supabase === 'undefined') {
-      console.warn('[Auth] Supabase JS not loaded');
-      return;
-    }
+    // Try Supabase in background (don't block login screen)
+    setTimeout(() => this._initSupabase(), 0);
+  },
 
-    this._client = supabase.createClient(this.SUPABASE_URL, this.SUPABASE_ANON_KEY);
+  _initSupabase() {
+    if (this.SUPABASE_URL.includes('YOUR_PROJECT') || typeof supabase === 'undefined') return;
 
-    // Check for existing session
+    try {
+      this._client = supabase.createClient(this.SUPABASE_URL, this.SUPABASE_ANON_KEY);
+    } catch (e) { return; }
+
     this._client.auth.getSession().then(({ data }) => {
-      if (data.session) {
+      if (data?.session) {
         this._user = data.session.user;
         this._onLogin();
+        this._dismissLogin();
       }
       this._renderAuthUI();
-    });
+    }).catch(() => {});
 
-    // Listen for auth changes
     this._client.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         this._user = session.user;
         this._onLogin();
-      } else if (event === 'SIGNED_OUT') {
+        this._dismissLogin();
+      } else if (event === 'SIGNED_OUT' && this._user) {
         this._user = null;
         this._onLogout();
       }
       this._renderAuthUI();
     });
+  },
+
+  _setupLoginScreen() {
+    const submit = document.getElementById('login-submit');
+    const google = document.getElementById('login-google');
+    const emailInput = document.getElementById('login-email');
+    const passInput = document.getElementById('login-password');
+
+    if (submit) {
+      submit.addEventListener('click', () => this._handleLogin());
+    }
+    if (passInput) {
+      passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') this._handleLogin(); });
+    }
+    if (google) {
+      google.addEventListener('click', () => {
+        if (this._client) this.signInWithGoogle();
+      });
+    }
+  },
+
+  _handleLogin() {
+    const email = document.getElementById('login-email')?.value?.trim();
+    const password = document.getElementById('login-password')?.value;
+    const errEl = document.getElementById('login-error');
+    if (!email || !password) return;
+
+    // Clear previous error
+    if (errEl) errEl.style.display = 'none';
+
+    // Guest login — instant, no network
+    if (email === this.GUEST_USER) {
+      if (password === this.GUEST_PASS) {
+        this._user = { email: 'guest', isGuest: true };
+        localStorage.setItem('motorcamp-auth', 'guest');
+        this._dismissLogin();
+        this._renderAuthUI();
+      } else {
+        if (errEl) { errEl.textContent = 'Incorrect password'; errEl.style.display = 'block'; }
+      }
+      return;
+    }
+
+    // Supabase login
+    if (this._client) {
+      this.signIn(email, password).then(result => {
+        if (result.error) {
+          if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
+        }
+      });
+    } else {
+      if (errEl) { errEl.textContent = 'Incorrect username or password'; errEl.style.display = 'block'; }
+    }
+  },
+
+  _dismissLogin() {
+    const screen = document.getElementById('login-screen');
+    if (screen) {
+      screen.classList.add('fade-out');
+      setTimeout(() => screen.remove(), 400);
+    }
+  },
+
+  _showLogin() {
+    // Full reload to re-show login (login screen is removed from DOM after dismiss)
+    localStorage.removeItem('motorcamp-auth');
+    window.location.reload();
   },
 
   // ===== Auth Actions =====
@@ -65,8 +144,12 @@ const Auth = {
   },
 
   async signOut() {
-    if (!this._client) return;
-    await this._client.auth.signOut();
+    localStorage.removeItem('motorcamp-auth');
+    this._user = null;
+    if (this._client) {
+      try { await this._client.auth.signOut(); } catch (e) { /* ignore */ }
+    }
+    window.location.reload();
   },
 
   isLoggedIn() {

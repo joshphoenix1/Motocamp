@@ -8,11 +8,30 @@ const RoutePlanner = {
   elevationMarker: null,
   _cachedGravelWPs: null,   // cached gravel waypoints for current route
   _basePoints: null,         // route points without gravel injected
+  activeInstructions: null,  // turn-by-turn instructions for dashboard
+  activeCoordinates: null,   // route coordinates for dashboard snapping
+
+  HISTORY_KEY: 'motorcamp-route-history',
+  MAX_HISTORY: 4,
 
   init(map) {
     this.map = map;
     this.setupEventListeners();
     this.loadSavedRoutes();
+  },
+
+  _getHistory() {
+    try { return JSON.parse(localStorage.getItem(this.HISTORY_KEY) || '[]'); }
+    catch { return []; }
+  },
+
+  _saveToHistory(name, lat, lon) {
+    let history = this._getHistory();
+    // Remove duplicate (same name)
+    history = history.filter(h => h.name !== name);
+    history.unshift({ name, lat, lon });
+    if (history.length > this.MAX_HISTORY) history = history.slice(0, this.MAX_HISTORY);
+    localStorage.setItem(this.HISTORY_KEY, JSON.stringify(history));
   },
 
   setupEventListeners() {
@@ -29,6 +48,9 @@ const RoutePlanner = {
       });
     }
 
+    // Use current location as start
+    document.getElementById('route-use-location').addEventListener('click', () => this.useCurrentLocation());
+
     // Save route button
     document.getElementById('save-route').addEventListener('click', () => this.saveRoute());
 
@@ -40,49 +62,76 @@ const RoutePlanner = {
   setupInputGeocoding(inputId) {
     const input = document.getElementById(inputId);
     if (!input) return;
+    const self = this;
 
     let resultsDiv;
-    input.addEventListener('focus', () => {
+    const ensureResults = () => {
       if (!resultsDiv) {
         resultsDiv = document.createElement('div');
-        resultsDiv.className = 'search-results';
-        resultsDiv.style.position = 'absolute';
-        resultsDiv.style.zIndex = '9999';
-        resultsDiv.style.width = input.parentElement.offsetWidth + 'px';
+        resultsDiv.className = 'search-results route-search-results';
         input.parentElement.style.position = 'relative';
         input.parentElement.appendChild(resultsDiv);
       }
+    };
+
+    const selectItem = (name, lat, lon) => {
+      input.value = name;
+      input.dataset.lat = lat;
+      input.dataset.lon = lon;
+      if (resultsDiv) resultsDiv.classList.add('hidden');
+      self._saveToHistory(name, lat, lon);
+      input.blur();
+    };
+
+    const showHistory = () => {
+      const history = self._getHistory();
+      if (!history.length) return;
+      ensureResults();
+      resultsDiv.innerHTML = history.map(h =>
+        `<div class="search-result-item" data-lat="${h.lat}" data-lon="${h.lon}">
+          <i class="fas fa-clock"></i>${h.name}
+        </div>`
+      ).join('');
+      resultsDiv.classList.remove('hidden');
+      resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', () => selectItem(item.textContent.trim(), item.dataset.lat, item.dataset.lon));
+      });
+    };
+
+    input.addEventListener('focus', () => {
+      // Scroll input to top on mobile so keyboard doesn't cover results
+      if (window.innerWidth <= 768) {
+        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+      }
+      // Show history if input is empty
+      if (!input.value.trim()) showHistory();
     });
 
     input.addEventListener('input', Utils.debounce(async () => {
       const q = input.value.trim();
       if (q.length < 3) {
-        if (resultsDiv) resultsDiv.classList.add('hidden');
+        if (q.length === 0) showHistory();
+        else if (resultsDiv) resultsDiv.classList.add('hidden');
         return;
       }
 
+      ensureResults();
       try {
-        const b = this.map.getBounds();
+        const b = self.map.getBounds();
         const viewbox = `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}&bounded=0`;
         const resp = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${viewbox}&limit=5`
         );
         const data = await resp.json();
-        if (resultsDiv && data.length) {
+        if (data.length) {
           resultsDiv.innerHTML = data.map(r =>
             `<div class="search-result-item" data-lat="${r.lat}" data-lon="${r.lon}">
               <i class="fas fa-map-marker-alt"></i>${r.display_name.split(',').slice(0, 2).join(', ')}
             </div>`
           ).join('');
           resultsDiv.classList.remove('hidden');
-
           resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
-            item.addEventListener('click', () => {
-              input.value = item.textContent.trim();
-              input.dataset.lat = item.dataset.lat;
-              input.dataset.lon = item.dataset.lon;
-              resultsDiv.classList.add('hidden');
-            });
+            item.addEventListener('click', () => selectItem(item.textContent.trim(), item.dataset.lat, item.dataset.lon));
           });
         }
       } catch (e) { console.warn('Geocoding failed', e); }
@@ -108,23 +157,60 @@ const RoutePlanner = {
   },
 
   setupInputGeocoding2(input) {
+    const self = this;
     let resultsDiv;
-    input.addEventListener('input', Utils.debounce(async () => {
-      const q = input.value.trim();
-      if (q.length < 3) return;
 
+    const ensureResults = () => {
       if (!resultsDiv) {
         resultsDiv = document.createElement('div');
-        resultsDiv.className = 'search-results';
-        resultsDiv.style.position = 'absolute';
-        resultsDiv.style.zIndex = '9999';
-        resultsDiv.style.width = '100%';
+        resultsDiv.className = 'search-results route-search-results';
         input.parentElement.style.position = 'relative';
         input.parentElement.appendChild(resultsDiv);
       }
+    };
 
+    const selectItem = (name, lat, lon) => {
+      input.value = name;
+      input.dataset.lat = lat;
+      input.dataset.lon = lon;
+      if (resultsDiv) resultsDiv.classList.add('hidden');
+      self._saveToHistory(name, lat, lon);
+      input.blur();
+    };
+
+    const showHistory = () => {
+      const history = self._getHistory();
+      if (!history.length) return;
+      ensureResults();
+      resultsDiv.innerHTML = history.map(h =>
+        `<div class="search-result-item" data-lat="${h.lat}" data-lon="${h.lon}">
+          <i class="fas fa-clock"></i>${h.name}
+        </div>`
+      ).join('');
+      resultsDiv.classList.remove('hidden');
+      resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', () => selectItem(item.textContent.trim(), item.dataset.lat, item.dataset.lon));
+      });
+    };
+
+    input.addEventListener('focus', () => {
+      if (window.innerWidth <= 768) {
+        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+      }
+      if (!input.value.trim()) showHistory();
+    });
+
+    input.addEventListener('input', Utils.debounce(async () => {
+      const q = input.value.trim();
+      if (q.length < 3) {
+        if (q.length === 0) showHistory();
+        else if (resultsDiv) resultsDiv.classList.add('hidden');
+        return;
+      }
+
+      ensureResults();
       try {
-        const b = this.map.getBounds();
+        const b = self.map.getBounds();
         const viewbox = `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}&bounded=0`;
         const resp = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}${viewbox}&limit=5`
@@ -137,18 +223,49 @@ const RoutePlanner = {
             </div>`
           ).join('');
           resultsDiv.classList.remove('hidden');
-
           resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
-            item.addEventListener('click', () => {
-              input.value = item.textContent.trim();
-              input.dataset.lat = item.dataset.lat;
-              input.dataset.lon = item.dataset.lon;
-              resultsDiv.classList.add('hidden');
-            });
+            item.addEventListener('click', () => selectItem(item.textContent.trim(), item.dataset.lat, item.dataset.lon));
           });
         }
       } catch (e) { console.warn('Geocoding failed', e); }
     }, 400));
+  },
+
+  // Set start input to current position. Returns true if set, false if no position available.
+  // Uses GPS if available, falls back to map center.
+  _setStartToCurrentLocation(andPlan) {
+    const input = document.getElementById('route-start');
+    const set = (lat, lng) => {
+      input.value = 'My Location';
+      input.dataset.lat = lat;
+      input.dataset.lon = lng;
+      if (andPlan) document.getElementById('plan-route').click();
+    };
+
+    // Try GPS first (with short timeout), fall back to map center
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => set(pos.coords.latitude, pos.coords.longitude),
+        () => {
+          // GPS failed — use map center
+          if (this.map) {
+            const c = this.map.getCenter();
+            set(c.lat, c.lng);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 3000 }
+      );
+    } else if (this.map) {
+      const c = this.map.getCenter();
+      set(c.lat, c.lng);
+    }
+  },
+
+  useCurrentLocation() {
+    const btn = document.getElementById('route-use-location');
+    if (btn) btn.classList.add('locating');
+    setTimeout(() => { if (btn) btn.classList.remove('locating'); }, 4000);
+    this._setStartToCurrentLocation(false);
   },
 
   async planRoute() {
@@ -250,6 +367,9 @@ const RoutePlanner = {
         const route = routes[0];
         const altRoutes = routes.slice(1);
 
+        // Store turn-by-turn instructions for dashboard next-turn display
+        this._storeActiveRoute(route);
+
         // Highlight gravel segments
         this.clearGravelOverlays();
         if (typeof GravelRoads !== 'undefined' && route.coordinates) {
@@ -277,6 +397,7 @@ const RoutePlanner = {
 
     const gravelActive = document.getElementById('gravel-bias')?.checked;
 
+    // --- Phase 1: show route stats immediately (no network) ---
     let html = `
       <div class="route-overview">
         <div class="route-stat">
@@ -290,7 +411,6 @@ const RoutePlanner = {
       </div>
     `;
 
-    // Route color legend
     if (gravelActive) {
       html += `<div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;font-size:0.75rem;color:var(--text-secondary)">
         <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:20px;height:3px;background:#ff1744;display:inline-block;border-radius:2px"></span> Sealed</span>
@@ -298,13 +418,9 @@ const RoutePlanner = {
       </div>`;
     }
 
-    // Route options (main + alternatives) — clickable to select
     if (altRoutes && altRoutes.length > 0) {
-      // Store all routes so user can switch
       this._allRoutes = [route, ...altRoutes];
-
       html += '<div style="margin-bottom:12px"><h4 style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px"><i class="fas fa-code-branch"></i> Route Options</h4>';
-
       for (let a = 0; a < this._allRoutes.length; a++) {
         const r = this._allRoutes[a];
         const rKm = (r.summary.totalDistance / 1000).toFixed(0);
@@ -313,7 +429,6 @@ const RoutePlanner = {
         const isSelected = a === 0;
         const color = a === 0 ? '#ff1744' : '#ff9800';
         const label = a === 0 ? 'Fastest' : a === 1 ? 'Alternative' : `Option ${a + 1}`;
-
         html += `<div class="route-option" data-route-idx="${a}" onclick="RoutePlanner.selectRoute(${a})"
           style="display:flex;gap:12px;align-items:center;padding:8px;background:${isSelected ? 'rgba(255,23,68,0.08)' : 'var(--bg-tertiary)'};border-radius:var(--radius);margin-bottom:4px;font-size:0.8rem;border-left:3px solid ${color};cursor:pointer;transition:background 0.2s">
           <span style="font-weight:600;min-width:50px">${rKm}km</span>
@@ -324,86 +439,7 @@ const RoutePlanner = {
       html += '</div>';
     }
 
-    // === Fetch weather for all points in parallel (shared by warnings + summary) ===
-    const weatherPromises = points.map(p => Weather.fetchPointWeather(p.lat, p.lng).catch(() => null));
-    const weatherData = await Promise.all(weatherPromises);
-
-    // === Route Warnings (uses pre-fetched weather) ===
-    const warnings = await this.generateRouteWarnings(points, routeCoords, weatherData);
-    if (warnings.length > 0) {
-      html += `<div style="margin-bottom:12px">`;
-      html += `<h4 style="font-size:0.78rem;color:#ff5252;margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Warnings</h4>`;
-      for (const w of warnings) {
-        const iconColor = w.severity === 'high' ? '#ff5252' : '#ffab40';
-        html += `<div style="display:flex;gap:8px;align-items:flex-start;padding:8px;background:rgba(255,82,82,0.06);border-radius:var(--radius);margin-bottom:4px;border-left:3px solid ${iconColor}">
-          <i class="fas fa-${w.icon}" style="color:${iconColor};margin-top:2px;flex-shrink:0"></i>
-          <div style="font-size:0.78rem"><strong>${w.title}</strong><br><span style="color:var(--text-muted)">${w.detail}</span></div>
-        </div>`;
-      }
-      html += `</div>`;
-    }
-
-    // Fetch weather for each point
-    html += '<div class="route-segments">';
-
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
-      const isStart = i === 0;
-      const isEnd = i === points.length - 1;
-      const label = isStart ? 'Start' : isEnd ? 'Destination' : `Stop ${i}`;
-
-      // Use pre-fetched weather
-      const wxData = weatherData[i];
-      const dayIdx = Math.min(i, 6); // Spread across forecast days
-
-      // Find nearby services
-      const nearbyServices = this.findNearbyServices(p, 20); // 20km radius
-
-      html += `<div class="route-segment">`;
-      html += `<div class="route-segment-header">`;
-      html += `<h4><i class="fas fa-${isStart ? 'play-circle' : isEnd ? 'flag-checkered' : 'map-pin'}"
-               style="color:${isStart ? 'var(--accent)' : isEnd ? 'var(--danger)' : 'var(--info)'}"></i> ${label}</h4>`;
-
-      if (wxData?.daily) {
-        const date = new Date(wxData.daily.time[dayIdx]);
-        html += `<span>${date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>`;
-      }
-      html += '</div>';
-
-      // Weather row
-      if (wxData?.daily) {
-        const wx = Utils.getWeatherInfo(wxData.daily.weather_code[dayIdx]);
-        html += `
-          <div class="route-segment-weather">
-            <div class="wx-mini">${wx.icon} ${wx.desc}</div>
-            <div class="wx-mini"><i class="fas fa-temperature-half"></i> ${Math.round(wxData.daily.temperature_2m_max[dayIdx])}°/${Math.round(wxData.daily.temperature_2m_min[dayIdx])}°</div>
-            <div class="wx-mini"><i class="fas fa-droplet"></i> ${wxData.daily.precipitation_sum[dayIdx].toFixed(1)}mm</div>
-            <div class="wx-mini"><i class="fas fa-wind"></i> ${Math.round(wxData.daily.wind_speed_10m_max[dayIdx])}m/s</div>
-          </div>`;
-      }
-
-      // Nearby services
-      html += '<div class="route-segment-services">';
-      const serviceTypes = [
-        { key: 'campsites', icon: 'campground', label: 'Campsites' },
-        { key: 'fuel', icon: 'gas-pump', label: 'Fuel' },
-        { key: 'water', icon: 'droplet', label: 'Water' },
-        { key: 'shops', icon: 'store', label: 'Shops' },
-        { key: 'toilets', icon: 'toilet', label: 'Toilets' },
-      ];
-      for (const svc of serviceTypes) {
-        const count = nearbyServices[svc.key] || 0;
-        html += `<span class="service-tag ${count > 0 ? 'available' : ''}">
-          <i class="fas fa-${svc.icon}"></i> ${count} ${svc.label}
-        </span>`;
-      }
-      html += '</div>';
-      html += '</div>';
-    }
-
-    html += '</div>';
-
-    // Send to Google Maps button
+    // Google Maps link (no network needed)
     const gmapsUrl = this.buildGoogleMapsURL(points);
     html += `
       <div style="margin-top:12px">
@@ -413,21 +449,135 @@ const RoutePlanner = {
       </div>
     `;
 
+    // Placeholders for async content
+    html += '<div id="route-warnings-slot"></div>';
+    html += '<div id="route-elevation-slot"></div>';
+    html += '<div id="route-segments-slot"><p style="color:var(--text-muted);font-size:0.8rem;padding:8px"><i class="fas fa-spinner fa-spin"></i> Loading weather &amp; elevation...</p></div>';
+
     content.innerHTML = html;
     summary.classList.remove('hidden');
 
-    // Fetch and render elevation profile
-    if (routeCoords && routeCoords.length > 1) {
-      const elData = await this.fetchElevationData(routeCoords);
-      if (elData) {
-        this.lastElevationData = elData; // expose for dashboard sparkline
-        // Insert elevation profile after route overview
-        const overviewEl = content.querySelector('.route-overview');
-        const insertTarget = overviewEl ? overviewEl.nextSibling : content.firstChild;
-        const elContainer = document.createElement('div');
-        content.insertBefore(elContainer, insertTarget);
-        this.renderElevationProfile(elData, elContainer);
+    // --- Phase 2: fetch weather + elevation in background ---
+    this._loadRouteDetails(points, routeCoords, content);
+  },
+
+  // Non-blocking: fills in weather warnings, waypoint details, and elevation
+  async _loadRouteDetails(points, routeCoords, content) {
+    // Fire all fetches in parallel
+    const weatherPromise = Promise.all(
+      points.map(p => Weather.fetchPointWeather(p.lat, p.lng).catch(() => null))
+    );
+    const elevPromise = (routeCoords && routeCoords.length > 1)
+      ? this.fetchElevationData(routeCoords).catch(() => null)
+      : Promise.resolve(null);
+
+    const [weatherData, elData] = await Promise.all([weatherPromise, elevPromise]);
+
+    // --- Warnings ---
+    const warningsSlot = content.querySelector('#route-warnings-slot');
+    if (warningsSlot) {
+      const warnings = await this.generateRouteWarnings(points, routeCoords, weatherData);
+      if (warnings.length > 0) {
+        let wHtml = '<div style="margin-bottom:12px">';
+        wHtml += '<h4 style="font-size:0.78rem;color:#ff5252;margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Warnings</h4>';
+        for (const w of warnings) {
+          const iconColor = w.severity === 'high' ? '#ff5252' : '#ffab40';
+          wHtml += `<div style="display:flex;gap:8px;align-items:flex-start;padding:8px;background:rgba(255,82,82,0.06);border-radius:var(--radius);margin-bottom:4px;border-left:3px solid ${iconColor}">
+            <i class="fas fa-${w.icon}" style="color:${iconColor};margin-top:2px;flex-shrink:0"></i>
+            <div style="font-size:0.78rem"><strong>${w.title}</strong><br><span style="color:var(--text-muted)">${w.detail}</span></div>
+          </div>`;
+        }
+        wHtml += '</div>';
+        warningsSlot.innerHTML = wHtml;
       }
+    }
+
+    // --- Elevation profile ---
+    const elevSlot = content.querySelector('#route-elevation-slot');
+    if (elevSlot && elData) {
+      this.lastElevationData = elData;
+      this.renderElevationProfile(elData, elevSlot);
+    }
+
+    // --- Waypoint segments (weather + services) ---
+    const segSlot = content.querySelector('#route-segments-slot');
+    if (segSlot) {
+      let sHtml = '<div class="route-segments">';
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const isStart = i === 0;
+        const isEnd = i === points.length - 1;
+        const label = isStart ? 'Start' : isEnd ? 'Destination' : `Stop ${i}`;
+        const wxData = weatherData[i];
+        const dayIdx = Math.min(i, 6);
+        const nearbyServices = this.findNearbyServices(p, 20);
+
+        sHtml += '<div class="route-segment">';
+        sHtml += '<div class="route-segment-header">';
+        sHtml += `<h4><i class="fas fa-${isStart ? 'play-circle' : isEnd ? 'flag-checkered' : 'map-pin'}"
+                 style="color:${isStart ? 'var(--accent)' : isEnd ? 'var(--danger)' : 'var(--info)'}"></i> ${label}</h4>`;
+        if (wxData?.daily) {
+          const date = new Date(wxData.daily.time[dayIdx]);
+          sHtml += `<span>${date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>`;
+        }
+        sHtml += '</div>';
+
+        if (wxData?.daily) {
+          const wx = Utils.getWeatherInfo(wxData.daily.weather_code[dayIdx]);
+          sHtml += `
+            <div class="route-segment-weather">
+              <div class="wx-mini">${wx.icon} ${wx.desc}</div>
+              <div class="wx-mini"><i class="fas fa-temperature-half"></i> ${Math.round(wxData.daily.temperature_2m_max[dayIdx])}°/${Math.round(wxData.daily.temperature_2m_min[dayIdx])}°</div>
+              <div class="wx-mini"><i class="fas fa-droplet"></i> ${wxData.daily.precipitation_sum[dayIdx].toFixed(1)}mm</div>
+              <div class="wx-mini"><i class="fas fa-wind"></i> ${Math.round(wxData.daily.wind_speed_10m_max[dayIdx])}m/s</div>
+            </div>`;
+        }
+
+        sHtml += '<div class="route-segment-services">';
+        const serviceTypes = [
+          { key: 'campsites', icon: 'campground', label: 'Campsites' },
+          { key: 'fuel', icon: 'gas-pump', label: 'Fuel' },
+          { key: 'water', icon: 'droplet', label: 'Water' },
+          { key: 'shops', icon: 'store', label: 'Shops' },
+          { key: 'toilets', icon: 'toilet', label: 'Toilets' },
+        ];
+        for (const svc of serviceTypes) {
+          const count = nearbyServices[svc.key] || 0;
+          sHtml += `<span class="service-tag ${count > 0 ? 'available' : ''}">
+            <i class="fas fa-${svc.icon}"></i> ${count} ${svc.label}
+          </span>`;
+        }
+        sHtml += '</div></div>';
+      }
+      sHtml += '</div>';
+      segSlot.innerHTML = sHtml;
+    }
+  },
+
+  // Store active route data for dashboard turn-by-turn
+  _storeActiveRoute(route) {
+    if (route && route.instructions && route.coordinates) {
+      // Build cumulative distances along route coordinates for snapping
+      const coords = route.coordinates;
+      const cumDist = [0];
+      for (let i = 1; i < coords.length; i++) {
+        const d = coords[i - 1].distanceTo(coords[i]);
+        cumDist.push(cumDist[i - 1] + d);
+      }
+      this.activeCoordinates = coords;
+      this.activeInstructions = route.instructions.map(inst => ({
+        type: inst.type,
+        text: inst.text,
+        distance: inst.distance,
+        road: inst.road || '',
+        index: inst.index,
+        cumDist: cumDist[inst.index] || 0
+      }));
+      this._activeCumDist = cumDist;
+    } else {
+      this.activeInstructions = null;
+      this.activeCoordinates = null;
+      this._activeCumDist = null;
     }
   },
 
@@ -453,6 +603,9 @@ const RoutePlanner = {
     if (route.coordinates) {
       this.map.fitBounds(L.latLngBounds(route.coordinates), { padding: [50, 50] });
     }
+
+    // Update active instructions for dashboard
+    this._storeActiveRoute(route);
   },
 
   // Inject gravel waypoints into base points, sorted by distance from start
@@ -1051,6 +1204,9 @@ const RoutePlanner = {
 
   clearRoute() {
     this.clearRouteDisplay();
+    this.activeInstructions = null;
+    this.activeCoordinates = null;
+    this._activeCumDist = null;
     this.lastElevationData = null;
     document.getElementById('route-start').value = '';
     document.getElementById('route-start').dataset.lat = '';

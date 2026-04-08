@@ -531,8 +531,8 @@ const Layers = {
 
     // === Action links ===
     html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">`;
-    // Navigate
-    html += `<a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fas fa-directions"></i> Navigate</a>`;
+    // Directions (in-app route)
+    html += `<a href="#" onclick="event.preventDefault();RoutePlanner.directionsTo(${lat},${lon},'${name.replace(/'/g, "\\'")}')" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fas fa-directions"></i> Directions</a>`;
     // Google Maps
     html += `<a href="https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lon},15z" target="_blank" style="font-size:0.72em;color:var(--accent);text-decoration:none"><i class="fab fa-google"></i> Maps</a>`;
     // Website
@@ -981,9 +981,9 @@ const Layers = {
       </div>
 
       <div class="info-actions">
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="btn btn-sm">
-          <i class="fas fa-directions"></i> Navigate
-        </a>
+        <button class="btn btn-sm" onclick="RoutePlanner.directionsTo(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')">
+          <i class="fas fa-directions"></i> Directions
+        </button>
         <button class="btn btn-sm" onclick="RoutePlanner.addAsWaypoint(${lat}, ${lon}, '${name.replace(/'/g, "\\'")}')">
           <i class="fas fa-plus"></i> Add to Route
         </button>
