@@ -33,7 +33,8 @@
   let currentWindDir = null;    // degrees (meteorological, from)
   let currentWindGust = null;
 
-  // Pressure trend
+  // Pressure
+  let currentPressure = null;
   let pressureHistory = []; // [{pressure, time}] ring buffer
   let pressureTrend = null; // slope in hPa/hr
 
@@ -175,6 +176,7 @@
         currentWindSpeed = null;
         currentWindDir = null;
         currentWindGust = null;
+        currentPressure = null;
         pressureHistory = [];
         pressureTrend = null;
         tempHistory = [];
@@ -476,9 +478,9 @@
 
           const pressure = data.current.surface_pressure;
           if (pressure != null) {
+            currentPressure = Math.round(pressure);
             pressureHistory.push({ pressure, time: Date.now() });
             if (pressureHistory.length > 6) pressureHistory.shift();
-            updatePressureDisplay();
             computePressureTrend();
           }
         }
@@ -498,14 +500,7 @@
   }
 
   function updatePressureDisplay() {
-    const valEl = document.getElementById('dash-baro-value');
     const arrow = document.getElementById('dash-baro-arrow');
-
-    // Show current pressure value
-    if (valEl && pressureHistory.length > 0) {
-      valEl.textContent = Math.round(pressureHistory[pressureHistory.length - 1].pressure);
-    }
-
     if (!arrow) return;
 
     if (pressureTrend === null) {
@@ -561,6 +556,8 @@
     const avgEl = document.getElementById('dash-avg-speed-value');
 
     if (tempEl) tempEl.textContent = currentTemp !== null ? currentTemp : '--';
+    const baroEl = document.getElementById('dash-baro-value');
+    if (baroEl) baroEl.textContent = currentPressure !== null ? currentPressure : '--';
     if (tripEl) tripEl.textContent = (tripDistance / 1000).toFixed(1);
     if (gradEl) gradEl.textContent = Math.round(currentGradient);
     if (avgEl && tripStartTime) {
