@@ -221,9 +221,15 @@
   map.on('contextmenu', (e) => {
     e.originalEvent.preventDefault();
     ctxLatLng = e.latlng;
-    ctxMenu.style.left = e.originalEvent.pageX + 'px';
-    ctxMenu.style.top = e.originalEvent.pageY + 'px';
     ctxMenu.classList.remove('hidden');
+
+    // Clamp menu position so it stays fully on screen
+    const menuW = ctxMenu.offsetWidth;
+    const menuH = ctxMenu.offsetHeight;
+    const x = Math.min(e.originalEvent.pageX, window.innerWidth - menuW - 8);
+    const y = Math.min(e.originalEvent.pageY, window.innerHeight - menuH - 8);
+    ctxMenu.style.left = Math.max(8, x) + 'px';
+    ctxMenu.style.top = Math.max(8, y) + 'px';
   });
 
   document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
