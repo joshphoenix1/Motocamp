@@ -471,10 +471,9 @@
           currentWindGust = data.current.wind_gusts_10m;
           updateWindDisplay();
 
-          // Temperature trend
+          // Temperature trend (history kept for future use)
           tempHistory.push({ temp: data.current.temperature_2m, time: Date.now() });
           if (tempHistory.length > 6) tempHistory.shift();
-          computeTempTrend();
 
           const pressure = data.current.surface_pressure;
           if (pressure != null) {
