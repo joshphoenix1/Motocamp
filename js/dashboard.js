@@ -460,7 +460,7 @@
 
   function fetchWeather(lat, lon) {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      '&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure';
+      '&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl';
     fetch(url)
       .then(r => r.json())
       .then(data => {
@@ -475,7 +475,7 @@
           tempHistory.push({ temp: data.current.temperature_2m, time: Date.now() });
           if (tempHistory.length > 6) tempHistory.shift();
 
-          const pressure = data.current.surface_pressure;
+          const pressure = data.current.pressure_msl;
           if (pressure != null) {
             currentPressure = Math.round(pressure);
             // Direct DOM update — belt and suspenders
