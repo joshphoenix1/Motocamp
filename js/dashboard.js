@@ -479,6 +479,9 @@
           const pressure = data.current.surface_pressure;
           if (pressure != null) {
             currentPressure = Math.round(pressure);
+            // Direct DOM update — belt and suspenders
+            const bp = document.getElementById('dash-baro-value');
+            if (bp) bp.textContent = currentPressure;
             pressureHistory.push({ pressure, time: Date.now() });
             if (pressureHistory.length > 6) pressureHistory.shift();
             computePressureTrend();
@@ -486,7 +489,7 @@
         }
         updateStatsStrip();
       })
-      .catch(() => {});
+      .catch(err => console.error('Weather fetch failed:', err));
   }
 
   function computePressureTrend() {
