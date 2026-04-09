@@ -326,30 +326,7 @@
   });
 
   function updateGpsStatus(status, msg) {
-    gpsStatus = status === 'stale' ? 'active' : status; // keep internal state
-    const el = document.getElementById('dash-gps-status');
-    const textEl = document.getElementById('dash-gps-text');
-    if (!el || !textEl) return;
-
-    el.className = 'dash-gps-status';
-    switch (status) {
-      case 'waiting':
-        el.classList.add('gps-waiting');
-        textEl.textContent = 'Waiting for GPS...';
-        break;
-      case 'active':
-        el.classList.add('gps-active');
-        textEl.textContent = 'GPS Connected';
-        break;
-      case 'stale':
-        el.classList.add('gps-stale');
-        textEl.textContent = 'GPS Signal Lost...';
-        break;
-      case 'error':
-        el.classList.add('gps-error');
-        textEl.textContent = msg || 'GPS Error';
-        break;
-    }
+    gpsStatus = status === 'stale' ? 'active' : status;
   }
 
   function onPosition(pos) {

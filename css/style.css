@@ -883,38 +883,6 @@ body.dashboard-active {
   position: relative;
 }
 
-/* GPS Status indicator */
-.dash-gps-status {
-  position: absolute;
-  top: 6px;
-  right: 52px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: rgba(26,38,50,0.8);
-  border: 1px solid var(--bg-tertiary);
-  z-index: 100001;
-}
-
-.dash-gps-status i { font-size: 0.65rem; }
-
-.gps-waiting { color: #ff9800; }
-.gps-waiting i { color: #ff9800; animation: gps-pulse 1.5s infinite; }
-.gps-active { color: var(--accent); }
-.gps-active i { color: var(--accent); }
-.gps-stale { color: #ff9800; }
-.gps-stale i { color: #ff9800; animation: gps-pulse 0.8s infinite; }
-.gps-error { color: var(--danger); }
-.gps-error i { color: var(--danger); }
-
-@keyframes gps-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
 /* ── Top instrument bar ── */
 .dash-top-bar {
   flex: 0 0 auto;
