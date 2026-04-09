@@ -211,6 +211,12 @@
         }
       }, 2000);
 
+      // Fetch weather immediately using map centre (don't wait for GPS)
+      if (typeof map !== 'undefined' && map.getCenter) {
+        const c = map.getCenter();
+        fetchWeather(c.lat, c.lng);
+      }
+
       // Start compass for heading
       if (window.DeviceOrientationEvent) {
         orientationListener = onDeviceOrientation;
