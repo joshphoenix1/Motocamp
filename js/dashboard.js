@@ -450,6 +450,7 @@
     const hdg = currentHeading !== null ? Math.round(currentHeading) : null;
     updateDisplay(speedKmh, alt, hdg);
     updateStatsStrip();
+    updateWindDisplay();
     updateCompassArrow();
     updateNextTurn();
     updateRadar();
@@ -494,6 +495,7 @@
           if (pressure != null) {
             pressureHistory.push({ pressure, time: Date.now() });
             if (pressureHistory.length > 6) pressureHistory.shift();
+            updatePressureDisplay();
             computePressureTrend();
           }
         }
@@ -1286,10 +1288,10 @@
 
     // Route lines — split into past (dim) and ahead (bright), updated in updateMinimap
     minimapRoutePast = L.polyline([], {
-      color: '#ff1744', weight: 2, opacity: 0.25
+      color: '#888', weight: 2, opacity: 0.3
     }).addTo(minimap);
     minimapRouteAhead = L.polyline([], {
-      color: '#ff1744', weight: 3, opacity: 0.9
+      color: '#00c853', weight: 4, opacity: 0.95
     }).addTo(minimap);
 
     // Rider marker — small pulsing dot
@@ -1347,15 +1349,26 @@
       }
     }
 
-    // Pan to rider with forward bias based on heading
+    // Rotate map so heading is always up (heading-up mode like Google Maps nav)
+    const container = minimap.getContainer();
     if (currentHeading !== null) {
+      container.style.transform = `rotate(${-currentHeading}deg)`;
+
+      // Pan with forward bias so rider sits in bottom half, route ahead visible
       const offsetM = 200;
       const headRad = currentHeading * Math.PI / 180;
       const dLat = (offsetM / 111320) * Math.cos(headRad);
       const dLng = (offsetM / (111320 * Math.cos(currentLat * Math.PI / 180))) * Math.sin(headRad);
       minimap.panTo([currentLat + dLat, currentLng + dLng], { animate: false });
     } else {
+      container.style.transform = 'none';
       minimap.panTo([currentLat, currentLng], { animate: false });
+    }
+
+    // Counter-rotate rider dot so it stays upright despite map rotation
+    if (minimapRider) {
+      const dot = minimapRider.getElement()?.querySelector('.dash-rider-dot');
+      if (dot) dot.style.transform = `rotate(${currentHeading || 0}deg)`;
     }
   }
 
