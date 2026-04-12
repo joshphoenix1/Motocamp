@@ -41,8 +41,19 @@ const RoutePlanner = {
 
     // Re-route when gravel toggle changes — uses cached gravel data (instant)
     const gravelToggle = document.getElementById('gravel-bias');
+    const highwayToggle = document.getElementById('avoid-highways');
     if (gravelToggle) {
       gravelToggle.addEventListener('change', () => {
+        // Mutually exclusive with avoid-highways
+        if (gravelToggle.checked && highwayToggle) highwayToggle.checked = false;
+        if (!this._basePoints) return;
+        this._rebuildRoute();
+      });
+    }
+    if (highwayToggle) {
+      highwayToggle.addEventListener('change', () => {
+        // Mutually exclusive with gravel-bias
+        if (highwayToggle.checked && gravelToggle) gravelToggle.checked = false;
         if (!this._basePoints) return;
         this._rebuildRoute();
       });
@@ -293,26 +304,38 @@ const RoutePlanner = {
     this._basePoints = [start, ...waypoints, end];
     this._cachedGravelWPs = null;
 
-    // Pre-fetch gravel waypoints in background (don't block route display)
-    this.findGravelWaypoints(start, end, this._basePoints).then(wps => {
-      this._cachedGravelWPs = wps;
-      console.log(`Gravel: ${wps.length} waypoints cached for this route`);
-      // If gravel toggle is already on, rebuild with gravel now
-      if (document.getElementById('gravel-bias')?.checked && wps.length > 0) {
-        this._rebuildRoute();
-      }
-    }).catch(() => { this._cachedGravelWPs = []; });
+    const avoidHighways = document.getElementById('avoid-highways')?.checked;
 
-    // Build initial route (without gravel — instant)
-    let allPoints = [...this._basePoints];
-    const gravelBias = document.getElementById('gravel-bias')?.checked;
-
-    // If we somehow already have cached gravel WPs (e.g. from a previous identical route), use them
-    if (gravelBias && this._cachedGravelWPs && this._cachedGravelWPs.length > 0) {
-      allPoints = this._injectGravel(this._basePoints, this._cachedGravelWPs);
+    // Pre-fetch gravel waypoints in background unless we're in avoid-highways mode
+    if (!avoidHighways) {
+      this.findGravelWaypoints(start, end, this._basePoints).then(wps => {
+        this._cachedGravelWPs = wps;
+        console.log(`Gravel: ${wps.length} waypoints cached for this route`);
+        // If gravel toggle is already on, rebuild with gravel now
+        if (document.getElementById('gravel-bias')?.checked && wps.length > 0) {
+          this._rebuildRoute();
+        }
+      }).catch(() => { this._cachedGravelWPs = []; });
     }
 
+    this._dispatchRoute(this._basePoints);
+  },
+
+  // Route backend dispatcher — picks OSRM (default or gravel-injected) or BRouter (avoid highways)
+  _dispatchRoute(basePoints) {
     this.clearRouteDisplay();
+
+    const avoidHighways = document.getElementById('avoid-highways')?.checked;
+    if (avoidHighways) {
+      this._executeRouteBRouter(basePoints);
+      return;
+    }
+
+    const gravelBias = document.getElementById('gravel-bias')?.checked;
+    let allPoints = [...basePoints];
+    if (gravelBias && this._cachedGravelWPs && this._cachedGravelWPs.length > 0) {
+      allPoints = this._injectGravel(basePoints, this._cachedGravelWPs);
+    }
     this._executeRoute(allPoints);
   },
 
@@ -386,6 +409,246 @@ const RoutePlanner = {
       }).addTo(this.map);
       this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
     }
+  },
+
+  // Route via BRouter with motorway+unpaved avoidance. Parallel-fetches a reference
+  // route without the avoid flags so we can enforce a 25% duration budget vs. the
+  // motorway-allowed baseline. Falls back to OSRM with a warning if the budget
+  // is busted or the service errors out.
+  BROUTER_URL: 'https://brouter.de/brouter',
+  BROUTER_PROFILE: 'car-vario',
+  BROUTER_BUDGET: 1.25,
+
+  async _executeRouteBRouter(basePoints) {
+    // Show loading state in the summary panel
+    const summary = document.getElementById('route-summary');
+    const content = document.getElementById('route-summary-content');
+    if (summary && content) {
+      content.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:8px"><i class="fas fa-spinner fa-spin"></i> Routing via back roads...</p>';
+      summary.classList.remove('hidden');
+    }
+
+    const lonlats = basePoints.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
+    const buildUrl = (avoid) => {
+      const params = new URLSearchParams();
+      params.set('lonlats', lonlats);
+      params.set('profile', this.BROUTER_PROFILE);
+      if (avoid) {
+        params.set('profile:avoid_motorways', '1');
+        params.set('profile:avoid_unpaved', '1');
+      }
+      params.set('alternativeidx', '0');
+      params.set('format', 'geojson');
+      return `${this.BROUTER_URL}?${params.toString()}`;
+    };
+
+    try {
+      // Fetch both routes in parallel for apples-to-apples comparison
+      const [refResp, avoidResp] = await Promise.all([
+        fetch(buildUrl(false)),
+        fetch(buildUrl(true))
+      ]);
+      if (!refResp.ok || !avoidResp.ok) {
+        throw new Error(`BRouter HTTP ${refResp.status}/${avoidResp.status}`);
+      }
+      const [refJson, avoidJson] = await Promise.all([refResp.json(), avoidResp.json()]);
+      const refFeature = refJson?.features?.[0];
+      const avoidFeature = avoidJson?.features?.[0];
+      if (!refFeature || !avoidFeature) throw new Error('BRouter: empty feature collection');
+
+      // BRouter's total-time is a cost metric biased by the avoid_motorways penalty,
+      // so it is unusable as a real-world duration. Integrate distance / maxspeed
+      // across the segments in the messages array to get consistent wall-clock
+      // estimates for both routes. Same methodology on both cancels bias.
+      const refTime = this._estimateRealisticTime(refFeature);
+      const avoidTime = this._estimateRealisticTime(avoidFeature);
+      const ratio = refTime > 0 ? avoidTime / refTime : NaN;
+      console.log(`Avoid Highways: ref=${(refTime / 60).toFixed(0)}min, avoid=${(avoidTime / 60).toFixed(0)}min, ratio=${ratio.toFixed(2)}`);
+
+      if (!isFinite(ratio) || ratio > this.BROUTER_BUDGET) {
+        const pct = isFinite(ratio) ? Math.round((ratio - 1) * 100) : null;
+        console.warn(`Avoid Highways: busts 25% budget (ratio=${ratio.toFixed(2)}), falling back to OSRM`);
+        this._executeRoute(basePoints);
+        this._injectAvoidHighwaysWarning(
+          'Back-road route would take too long',
+          pct !== null ? `Exceeds 25% duration budget (${pct}% longer). Showing standard route instead.`
+                       : 'Exceeds 25% duration budget. Showing standard route instead.',
+          '#ffab40'
+        );
+        return;
+      }
+
+      this._drawBRouterRoute(avoidFeature, basePoints, avoidTime);
+    } catch (e) {
+      console.error('BRouter routing failed:', e);
+      this._executeRoute(basePoints);
+      this._injectAvoidHighwaysWarning(
+        'Back-road routing unavailable',
+        'BRouter service unreachable. Showing standard route instead.',
+        '#ff5252'
+      );
+    }
+  },
+
+  // Inserts a one-off warning block into the route summary after _executeRoute
+  // has finished rendering. Runs on a short timeout to land after the summary DOM
+  // is populated by the OSRM fallback path.
+  _injectAvoidHighwaysWarning(title, detail, color) {
+    setTimeout(() => {
+      const warnSlot = document.querySelector('#route-warnings-slot');
+      if (!warnSlot) return;
+      const block = `<div style="margin-bottom:12px">
+        <h4 style="font-size:0.78rem;color:${color};margin-bottom:6px"><i class="fas fa-triangle-exclamation"></i> Avoid Highways</h4>
+        <div style="display:flex;gap:8px;align-items:flex-start;padding:8px;background:rgba(255,171,64,0.08);border-radius:var(--radius);margin-bottom:4px;border-left:3px solid ${color}">
+          <i class="fas fa-road" style="color:${color};margin-top:2px;flex-shrink:0"></i>
+          <div style="font-size:0.78rem"><strong>${title}</strong><br><span style="color:var(--text-muted)">${detail}</span></div>
+        </div>
+      </div>`;
+      warnSlot.innerHTML = block + warnSlot.innerHTML;
+    }, 150);
+  },
+
+  // Integrates per-segment distance / (0.8 * maxspeed) along the BRouter messages
+  // array to produce a consistent wall-clock time estimate. Segments without a
+  // maxspeed tag default to 50km/h (typical NZ urban). Capped at 100km/h to avoid
+  // over-crediting unlikely open-road speeds on long tangents.
+  _estimateRealisticTime(feature) {
+    const msgs = feature?.properties?.messages;
+    if (!Array.isArray(msgs) || msgs.length < 2) {
+      const dist = parseFloat(feature?.properties?.['track-length']) || 0;
+      return dist / (65 / 3.6); // fallback: 65km/h average
+    }
+    let total = 0;
+    for (let i = 1; i < msgs.length; i++) {
+      const row = msgs[i];
+      const dist = parseFloat(row[3]) || 0;
+      const tags = row[9] || '';
+      const m = tags.match(/maxspeed=(\d+)/);
+      const maxspeed = m ? parseInt(m[1], 10) : 50;
+      const effKmh = Math.min(maxspeed * 0.8, 100);
+      total += dist / (effKmh * 1000 / 3600);
+    }
+    return total;
+  },
+
+  _drawBRouterRoute(feature, basePoints, realisticTime) {
+    const coords3d = feature.geometry.coordinates; // [lon, lat, ele]
+    const latlngs = coords3d.map(c => L.latLng(c[1], c[0]));
+
+    // Underlay+line to match the OSRM route styling (see _executeRoute lineOptions)
+    this.brouterLayer = L.layerGroup([
+      L.polyline(latlngs, { color: '#ff5252', opacity: 0.4, weight: 9 }),
+      L.polyline(latlngs, { color: '#ff1744', opacity: 0.85, weight: 5 })
+    ]).addTo(this.map);
+
+    this.map.fitBounds(L.latLngBounds(latlngs), { padding: [50, 50] });
+
+    // Start/waypoint/end markers (same icon set as _executeRoute.createMarker)
+    for (let i = 0; i < basePoints.length; i++) {
+      const wp = basePoints[i];
+      const isStart = i === 0;
+      const isEnd = i === basePoints.length - 1;
+      const marker = L.marker(wp, {
+        icon: L.divIcon({
+          className: 'custom-marker',
+          html: `<i class="fas fa-${isStart ? 'play' : isEnd ? 'flag-checkered' : 'circle'}"
+                 style="color:${isStart ? '#00c853' : isEnd ? '#ff5252' : '#40c4ff'}"></i>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        })
+      }).addTo(this.map);
+      this.routeMarkers.push(marker);
+    }
+
+    const trackLen = parseFloat(feature.properties['track-length']);
+    const totalTime = (typeof realisticTime === 'number' && realisticTime > 0)
+      ? realisticTime
+      : this._estimateRealisticTime(feature);
+    const instructions = this._synthesizeInstructions(latlngs);
+
+    // Synthetic route object matching the leaflet-routing-machine shape the rest
+    // of the module consumes (generateRouteSummary, _storeActiveRoute, etc.)
+    const syntheticRoute = {
+      summary: { totalDistance: trackLen, totalTime },
+      coordinates: latlngs,
+      instructions
+    };
+
+    this._storeActiveRoute(syntheticRoute);
+    this._allRoutes = [syntheticRoute];
+    this.generateRouteSummary(syntheticRoute, basePoints, [], latlngs);
+  },
+
+  // Synthesize turn-by-turn instructions from a polyline by detecting heading
+  // changes over ~80m windows. BRouter's native response only contains per-node
+  // way tags, not narrative directions, so we derive them geometrically.
+  _synthesizeInstructions(coords) {
+    if (!coords || coords.length < 2) return [];
+
+    const cumDist = [0];
+    for (let i = 1; i < coords.length; i++) {
+      cumDist.push(cumDist[i - 1] + coords[i - 1].distanceTo(coords[i]));
+    }
+
+    const instructions = [{ type: 'Depart', text: 'Head out', distance: 0, road: '', index: 0 }];
+
+    const WINDOW_M = 80;
+    const TURN_THRESHOLD = 25;
+    const SHARP_THRESHOLD = 65;
+    const MIN_GAP_M = 150;
+    let lastTurnDist = 0;
+
+    for (let i = 2; i < coords.length - 1; i++) {
+      // Walk back until we have at least WINDOW_M of history
+      let backIdx = i - 1;
+      while (backIdx > 0 && cumDist[i] - cumDist[backIdx] < WINDOW_M) backIdx--;
+      // Walk forward until we have at least WINDOW_M of look-ahead
+      let fwdIdx = i + 1;
+      while (fwdIdx < coords.length - 1 && cumDist[fwdIdx] - cumDist[i] < WINDOW_M) fwdIdx++;
+      if (backIdx === i || fwdIdx === i) continue;
+
+      const bearingIn = this._bearing(coords[backIdx], coords[i]);
+      const bearingOut = this._bearing(coords[i], coords[fwdIdx]);
+      let delta = bearingOut - bearingIn;
+      while (delta > 180) delta -= 360;
+      while (delta < -180) delta += 360;
+
+      const absDelta = Math.abs(delta);
+      if (absDelta < TURN_THRESHOLD) continue;
+      if (cumDist[i] - lastTurnDist < MIN_GAP_M) continue;
+
+      let type;
+      if (absDelta >= SHARP_THRESHOLD) type = delta > 0 ? 'SharpRight' : 'SharpLeft';
+      else type = delta > 0 ? 'Right' : 'Left';
+
+      instructions.push({
+        type,
+        text: type.startsWith('Sharp') ? `Sharp ${type.endsWith('Right') ? 'right' : 'left'}` : `Turn ${type.toLowerCase()}`,
+        distance: 0,
+        road: '',
+        index: i
+      });
+      lastTurnDist = cumDist[i];
+    }
+
+    instructions.push({
+      type: 'DestinationReached',
+      text: 'Arrive at destination',
+      distance: 0,
+      road: '',
+      index: coords.length - 1
+    });
+    return instructions;
+  },
+
+  _bearing(a, b) {
+    const toRad = Math.PI / 180;
+    const phi1 = a.lat * toRad;
+    const phi2 = b.lat * toRad;
+    const dLambda = (b.lng - a.lng) * toRad;
+    const y = Math.sin(dLambda) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   },
 
   async generateRouteSummary(route, points, altRoutes, routeCoords) {
@@ -619,21 +882,10 @@ const RoutePlanner = {
     return [start, ...middle, end];
   },
 
-  // Instantly rebuild route with/without gravel from cached data
+  // Instantly rebuild route with/without gravel/avoid-highways from cached data
   _rebuildRoute() {
     if (!this._basePoints) return;
-    const gravelBias = document.getElementById('gravel-bias')?.checked;
-    let allPoints = [...this._basePoints];
-
-    if (gravelBias && this._cachedGravelWPs && this._cachedGravelWPs.length > 0) {
-      allPoints = this._injectGravel(this._basePoints, this._cachedGravelWPs);
-      console.log(`Gravel: rebuilding with ${this._cachedGravelWPs.length} gravel waypoints`);
-    } else {
-      console.log('Gravel: rebuilding without gravel');
-    }
-
-    this.clearRouteDisplay();
-    this._executeRoute(allPoints);
+    this._dispatchRoute(this._basePoints);
   },
 
   // Find gravel/unpaved roads along the route using small spot queries (fast)
@@ -1142,6 +1394,10 @@ const RoutePlanner = {
       this.map.removeLayer(this.routeLine);
       this.routeLine = null;
     }
+    if (this.brouterLayer) {
+      this.map.removeLayer(this.brouterLayer);
+      this.brouterLayer = null;
+    }
     this.routeMarkers.forEach(m => this.map.removeLayer(m));
     this.routeMarkers = [];
     if (this.elevationMarker) { this.map.removeLayer(this.elevationMarker); this.elevationMarker = null; }
@@ -1249,6 +1505,7 @@ const RoutePlanner = {
       end: { name: endInput.value, lat: endInput.dataset.lat, lon: endInput.dataset.lon },
       waypoints,
       gravelBias: document.getElementById('gravel-bias')?.checked || false,
+      avoidHighways: document.getElementById('avoid-highways')?.checked || false,
       timestamp: Date.now()
     };
 
@@ -1316,11 +1573,11 @@ const RoutePlanner = {
       });
     }
 
-    // Set gravel toggle
+    // Set route-mode toggles (mutually exclusive)
     const gravelToggle = document.getElementById('gravel-bias');
-    if (gravelToggle) {
-      gravelToggle.checked = route.gravelBias || false;
-    }
+    const highwayToggle = document.getElementById('avoid-highways');
+    if (gravelToggle) gravelToggle.checked = !!route.gravelBias && !route.avoidHighways;
+    if (highwayToggle) highwayToggle.checked = !!route.avoidHighways;
 
     this.planRoute();
   },
