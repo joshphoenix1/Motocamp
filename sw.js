@@ -1,5 +1,5 @@
 /* ===== Service Worker — Offline Support ===== */
-const CACHE_NAME = 'motorcamp-v12';
+const CACHE_NAME = 'motorcamp-v13';
 const TILES_CACHE = 'motorcamp-tiles';
 const CDN_CACHE = 'motorcamp-cdn';
 

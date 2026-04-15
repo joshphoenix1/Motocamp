@@ -532,14 +532,16 @@
   function updateWindDisplay() {
     const valEl = document.getElementById('dash-wind-value');
     const arrowEl = document.getElementById('dash-wind-arrow');
-    if (valEl) valEl.textContent = currentWindSpeed !== null ? currentWindSpeed : '--';
+    // Show gust, not mean — it's what the rider actually feels.
+    const displaySpeed = currentWindGust != null ? Math.round(currentWindGust) : currentWindSpeed;
+    if (valEl) valEl.textContent = displaySpeed !== null ? displaySpeed : '--';
 
     if (arrowEl && currentWindDir !== null && currentHeading !== null) {
       const relativeDir = ((currentWindDir - currentHeading) + 360) % 360;
       arrowEl.style.transform = `rotate(${relativeDir}deg)`;
 
       const crossAngle = Math.abs(Math.sin(relativeDir * Math.PI / 180));
-      const crossSpeed = (currentWindSpeed || 0) * crossAngle;
+      const crossSpeed = (displaySpeed || 0) * crossAngle;
       let color;
       if (crossSpeed > 40) color = '#ff5252';
       else if (crossSpeed > 25) color = '#ffab40';
