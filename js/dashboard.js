@@ -548,17 +548,34 @@
       const relativeDir = ((currentWindDir - currentHeading) + 360) % 360;
       arrowEl.style.transform = `rotate(${relativeDir}deg)`;
 
-      const crossAngle = Math.abs(Math.sin(relativeDir * Math.PI / 180));
-      const crossSpeed = (displaySpeed || 0) * crossAngle;
-      let color;
-      if (crossSpeed > 40) color = '#ff5252';
-      else if (crossSpeed > 25) color = '#ffab40';
-      else color = '#00c853';
-      arrowEl.querySelector('polygon').setAttribute('fill', color);
+      // Crosswind destabilizes; head/tail just buffets. Weight head 0.5, cross 1.0.
+      // Saturates to red at ~30 km/h effective (30 full-cross = red, 30 head-on = yellow).
+      const crossFactor = Math.abs(Math.sin(relativeDir * Math.PI / 180));
+      const effective = (displaySpeed || 0) * (0.5 + 0.5 * crossFactor);
+      const t = Math.min(1, effective / 30);
+      arrowEl.querySelector('polygon').setAttribute('fill', windSeverityColor(t));
     } else if (arrowEl) {
       arrowEl.style.transform = 'rotate(0deg)';
       arrowEl.querySelector('polygon').setAttribute('fill', 'var(--text-muted)');
     }
+  }
+
+  function windSeverityColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    const lerp = (a, b, k) => Math.round(a + (b - a) * k);
+    let r, g, b;
+    if (t < 0.5) {
+      const k = t * 2;                           // green → yellow
+      r = lerp(0x00, 0xff, k);
+      g = lerp(0xc8, 0xd6, k);
+      b = lerp(0x53, 0x00, k);
+    } else {
+      const k = (t - 0.5) * 2;                   // yellow → red
+      r = 0xff;
+      g = lerp(0xd6, 0x52, k);
+      b = lerp(0x00, 0x52, k);
+    }
+    return `rgb(${r},${g},${b})`;
   }
 
   function updateStatsStrip() {
