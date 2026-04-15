@@ -532,8 +532,16 @@
   function updateWindDisplay() {
     const valEl = document.getElementById('dash-wind-value');
     const arrowEl = document.getElementById('dash-wind-arrow');
-    // Show gust, not mean — it's what the rider actually feels.
-    const displaySpeed = currentWindGust != null ? Math.round(currentWindGust) : currentWindSpeed;
+    // "Felt" wind: equivalent steady wind that exerts the same average force
+    // as a mean+gust mix. Force ∝ v², so weight gust 2× mean: √((m² + 2g²)/3).
+    let displaySpeed = null;
+    if (currentWindSpeed != null && currentWindGust != null) {
+      displaySpeed = Math.round(Math.sqrt((currentWindSpeed ** 2 + 2 * currentWindGust ** 2) / 3));
+    } else if (currentWindGust != null) {
+      displaySpeed = Math.round(currentWindGust);
+    } else if (currentWindSpeed != null) {
+      displaySpeed = currentWindSpeed;
+    }
     if (valEl) valEl.textContent = displaySpeed !== null ? displaySpeed : '--';
 
     if (arrowEl && currentWindDir !== null && currentHeading !== null) {
