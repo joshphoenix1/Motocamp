@@ -251,6 +251,7 @@
       renderCompassTarget();
       updateCompassArrow();
       navModeManual = null; // reset manual override on dashboard open
+      offRouteCount = 0;
 
       // Watch for phone orientation flips (portrait ↔ landscape)
       screenOrientationListener = onScreenOrientationChange;
@@ -545,7 +546,9 @@
     if (valEl) valEl.textContent = displaySpeed !== null ? displaySpeed : '--';
 
     if (arrowEl && currentWindDir !== null && currentHeading !== null) {
-      const relativeDir = ((currentWindDir - currentHeading) + 360) % 360;
+      // windDir is meteorological (from). Arrow points the way wind is blowing,
+      // in heading-up frame — so a headwind points down (toward the rider).
+      const relativeDir = ((currentWindDir - currentHeading + 180) % 360 + 360) % 360;
       arrowEl.style.transform = `rotate(${relativeDir}deg)`;
 
       // Crosswind destabilizes; head/tail just buffets. Weight head 0.5, cross 1.0.
@@ -1225,6 +1228,7 @@
   let navModeActive = false;   // is nav mode currently showing
   let navModeManual = null;    // null = auto, 'compass' | 'map' = user override
   let routeNearestIdx = 0;     // rider's snapped index on route coords
+  let offRouteCount = 0;       // consecutive GPS fixes with minDist > 2km (debounce jitter)
 
   function showNavMode() {
     if (navModeActive) return;
@@ -1443,8 +1447,14 @@
     // Store for minimap route splitting
     routeNearestIdx = nearestIdx;
 
-    // If rider is >2km from route and no manual override, fall back to compass
-    if (minDist > 2000 && navModeManual !== 'map') { hideNavMode(); return; }
+    // If rider is >2km from route and no manual override, fall back to compass.
+    // Require 3 consecutive off-route GPS fixes before hiding — single bad GPS fixes
+    // (jitter, satellite loss, tunnel exit) must not destroy and recreate the minimap.
+    if (minDist > 2000 && navModeManual !== 'map') {
+      if (++offRouteCount >= 3) hideNavMode();
+      return;
+    }
+    offRouteCount = 0;
 
     // Show nav mode unless user manually chose compass
     if (navModeManual !== 'compass') {
